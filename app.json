@@ -25,7 +25,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.quickshop.mobile",
-      "buildNumber": "3",
+      "buildNumber": "4",
       "infoPlist": {
         "NSCameraUsageDescription": "אנחנו צריכים גישה למצלמה כדי לסרוק ברקודים",
         "ITSAppUsesNonExemptEncryption": false
