@@ -107,14 +107,10 @@ export async function switchStore(storeId: string): Promise<{
 }
 
 // ============ Push Notifications ============
-export async function registerPushToken(data: {
-  pushToken: string;
-  deviceId: string;
-  platform: 'ios' | 'android';
-}): Promise<void> {
-  await api.post('/mobile/notifications', data);
+export async function registerPushToken(pushToken: string): Promise<void> {
+  await api.post('/mobile/notifications', { pushToken });
 }
 
-export async function unregisterPushToken(deviceId: string): Promise<void> {
-  await api.delete(`/mobile/notifications/${deviceId}`);
+export async function unregisterPushToken(): Promise<void> {
+  await api.delete('/mobile/notifications');
 }

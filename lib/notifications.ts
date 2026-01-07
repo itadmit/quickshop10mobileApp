@@ -46,6 +46,8 @@ export async function registerForPushNotifications(): Promise<string | null> {
     });
     token = pushTokenResponse.data;
 
+    console.log('🔔 Push Token:', token);
+
     // Set up Android notification channel with custom sound
     if (Platform.OS === 'android') {
       await Notifications.setNotificationChannelAsync('orders', {
@@ -64,17 +66,12 @@ export async function registerForPushNotifications(): Promise<string | null> {
       });
     }
 
-    // Register with backend
-    const deviceId = Constants.deviceId || 'unknown-device';
-    await registerPushToken({
-      pushToken: token,
-      deviceId,
-      platform: Platform.OS as 'ios' | 'android',
-    });
+    // Register push token with backend
+    await registerPushToken(token);
 
-    console.log('Push token registered:', token);
+    console.log('✅ Push token registered with server');
   } catch (error) {
-    console.error('Error getting push token:', error);
+    console.error('Error getting/registering push token:', error);
   }
 
   return token;
