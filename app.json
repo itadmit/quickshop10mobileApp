@@ -10,31 +10,36 @@
     "scheme": "quickshop",
     "extra": {
       "supportsRTL": true,
+      "router": {
+        "root": "./app"
+      },
       "eas": {
-        "projectId": "quickshop-mobile"
+        "projectId": "46d095a6-3316-471d-bb1c-343391981373"
       }
     },
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#3b82f6"
+      "backgroundColor": "#00785C"
     },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.quickshop.mobile",
       "infoPlist": {
-        "NSCameraUsageDescription": "אנחנו צריכים גישה למצלמה כדי לסרוק ברקודים"
+        "NSCameraUsageDescription": "אנחנו צריכים גישה למצלמה כדי לסרוק ברקודים",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
       "package": "com.quickshop.mobile",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#3b82f6"
+        "backgroundColor": "#00785C"
       },
       "edgeToEdgeEnabled": true,
       "permissions": [
-        "android.permission.CAMERA"
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
       ]
     },
     "web": {
@@ -56,14 +61,8 @@
           "cameraPermission": "אנחנו צריכים גישה למצלמה כדי לסרוק ברקודים"
         }
       ],
-      "expo-font",
-      [
-        "expo-notifications",
-        {
-          "icon": "./assets/notification-icon.png",
-          "color": "#3b82f6"
-        }
-      ]
-    ]
+      "expo-font"
+    ],
+    "owner": "quickshopil"
   }
 }
