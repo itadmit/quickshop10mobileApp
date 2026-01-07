@@ -61,7 +61,14 @@
           "cameraPermission": "אנחנו צריכים גישה למצלמה כדי לסרוק ברקודים"
         }
       ],
-      "expo-font"
+      "expo-font",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#00785C"
+        }
+      ]
     ],
     "owner": "quickshopil"
   }
