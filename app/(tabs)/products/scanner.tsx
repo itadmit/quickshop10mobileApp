@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Ionicons } from '@expo/vector-icons';
 import {
   View,
   StyleSheet,
@@ -71,7 +72,7 @@ export default function BarcodeScannerScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.permissionDenied}>
-          <Text style={{ fontSize: 48 }}>📷</Text>
+          <Ionicons name="camera-outline" size={48} color={colors.textMuted} />
           <Text size="xl" weight="semiBold" center style={{ marginTop: spacing[4] }}>
             נדרשת גישה למצלמה
           </Text>
@@ -114,7 +115,7 @@ export default function BarcodeScannerScreen() {
           style={styles.torchButton}
           onPress={() => setTorchOn(!torchOn)}
         >
-          <Text style={{ fontSize: 24 }}>{torchOn ? '🔦' : '💡'}</Text>
+          <Ionicons name={torchOn ? 'flashlight' : 'flashlight-outline'} size={24} color={colors.textPrimary} />
         </TouchableOpacity>
       </View>
 
@@ -159,7 +160,7 @@ export default function BarcodeScannerScreen() {
                       </Text>
                     )}
                     <View style={styles.productMeta}>
-                      <Text weight="bold" style={{ color: colors.primary }}>
+                      <Text weight="bold" style={{ color: '#00785C' }}>
                         {formatCurrency(barcodeResult.variant?.price || barcodeResult.product?.price || 0)}
                       </Text>
                       <Text color="secondary" size="sm">
@@ -173,7 +174,7 @@ export default function BarcodeScannerScreen() {
             ) : (
               <Card>
                 <View style={styles.notFound}>
-                  <Text style={{ fontSize: 32 }}>🔍</Text>
+                  <Ionicons name="search-outline" size={32} color={colors.textMuted} />
                   <Text weight="semiBold" style={{ marginTop: spacing[2] }}>
                     לא נמצא מוצר
                   </Text>
@@ -221,7 +222,7 @@ const styles = StyleSheet.create({
     width: 280,
     height: 150,
     borderWidth: 2,
-    borderColor: colors.primary,
+    borderColor: '#00785C',
     borderRadius: borderRadius.lg,
     backgroundColor: 'transparent',
   },
@@ -237,7 +238,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   bottomSheet: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.white,
     borderTopLeftRadius: borderRadius.xl,
     borderTopRightRadius: borderRadius.xl,
     padding: spacing[4],
@@ -249,12 +250,14 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    backgroundColor: colors.gray100,
+    backgroundColor: '#F6F6F7',
     borderRadius: borderRadius.md,
     padding: spacing[3],
     fontFamily: fonts.regular,
     fontSize: 16,
     textAlign: 'right',
+    borderWidth: 1,
+    borderColor: '#E1E3E5',
   },
   loadingContainer: {
     padding: spacing[4],
@@ -285,7 +288,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: spacing[6],
-    backgroundColor: colors.background,
+    backgroundColor: '#F6F6F7',
   },
 });
 

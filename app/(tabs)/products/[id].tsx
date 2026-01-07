@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Ionicons } from '@expo/vector-icons';
 import {
   View,
   ScrollView,
@@ -22,6 +23,7 @@ import {
   spacing,
   borderRadius,
   fonts,
+  shadows,
 } from '@/components/ui';
 import { formatCurrency } from '@/lib/utils/format';
 
@@ -125,7 +127,7 @@ export default function ProductDetailScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
+    <SafeAreaView style={styles.container} edges={[]}>
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
@@ -137,7 +139,7 @@ export default function ProductDetailScreen() {
             <Image source={{ uri: primaryImage.url }} style={styles.productImage} />
           ) : (
             <View style={[styles.productImage, styles.imagePlaceholder]}>
-              <Text style={{ fontSize: 64 }}>🖼️</Text>
+              <Ionicons name="image-outline" size={64} color={colors.textMuted} />
             </View>
           )}
           {!product.isActive && (
@@ -150,8 +152,8 @@ export default function ProductDetailScreen() {
         </View>
 
         {/* Product Info */}
-        <Card>
-          <Text size="2xl" weight="bold">
+        <Card style={styles.card}>
+          <Text size="2xl" weight="bold" style={{ textAlign: 'right', color: '#202223' }}>
             {product.name}
           </Text>
           {category && (
@@ -160,33 +162,20 @@ export default function ProductDetailScreen() {
             </Badge>
           )}
           {product.description && (
-            <Text color="secondary" style={styles.description}>
+            <Text color="secondary" style={{ ...styles.description, textAlign: 'right' }}>
               {product.description}
             </Text>
           )}
         </Card>
 
         {/* Quick Edit - Price */}
-        <Card>
-          <Subtitle style={styles.sectionTitle}>💰 מחיר</Subtitle>
+        <Card style={styles.card}>
+          <View style={styles.sectionTitleRow}>
+            <Ionicons name="pricetag-outline" size={20} color="#6D7175" />
+            <Text weight="semiBold" style={styles.sectionTitleText}>מחיר</Text>
+          </View>
           {editingPrice ? (
             <View style={styles.editRow}>
-              <TextInput
-                style={styles.editInput}
-                value={newPrice}
-                onChangeText={setNewPrice}
-                keyboardType="numeric"
-                placeholder={product.price?.toString() || '0'}
-                autoFocus
-              />
-              <Button
-                size="sm"
-                onPress={handlePriceUpdate}
-                loading={updatePrice.isPending}
-                style={styles.editButton}
-              >
-                שמור
-              </Button>
               <Button
                 size="sm"
                 variant="ghost"
@@ -197,19 +186,25 @@ export default function ProductDetailScreen() {
               >
                 ביטול
               </Button>
+              <Button
+                size="sm"
+                onPress={handlePriceUpdate}
+                loading={updatePrice.isPending}
+                style={styles.editButton}
+              >
+                שמור
+              </Button>
+              <TextInput
+                style={styles.editInput}
+                value={newPrice}
+                onChangeText={setNewPrice}
+                keyboardType="numeric"
+                placeholder={product.price?.toString() || '0'}
+                autoFocus
+              />
             </View>
           ) : (
             <View style={styles.valueRow}>
-              <View>
-                <Text size="2xl" weight="bold">
-                  {product.price ? formatCurrency(product.price) : 'ללא מחיר'}
-                </Text>
-                {product.comparePrice && (
-                  <Text color="muted" style={styles.comparePrice}>
-                    מחיר מקורי: {formatCurrency(product.comparePrice)}
-                  </Text>
-                )}
-              </View>
               <Button
                 size="sm"
                 variant="outline"
@@ -220,32 +215,29 @@ export default function ProductDetailScreen() {
               >
                 עריכה
               </Button>
+              <View style={{ alignItems: 'flex-end' }}>
+                <Text size="2xl" weight="bold" style={{ color: '#00785C' }}>
+                  {product.price ? formatCurrency(product.price) : 'ללא מחיר'}
+                </Text>
+                {product.comparePrice && (
+                  <Text style={{ ...styles.comparePrice, textAlign: 'right', color: '#9CA3AF' }}>
+                    מחיר מקורי: {formatCurrency(product.comparePrice)}
+                  </Text>
+                )}
+              </View>
             </View>
           )}
         </Card>
 
         {/* Quick Edit - Inventory */}
         {!product.hasVariants && product.trackInventory && (
-          <Card>
-            <Subtitle style={styles.sectionTitle}>📦 מלאי</Subtitle>
+          <Card style={styles.card}>
+            <View style={styles.sectionTitleRow}>
+              <Ionicons name="cube-outline" size={20} color="#6D7175" />
+              <Text weight="semiBold" style={styles.sectionTitleText}>מלאי</Text>
+            </View>
             {editingInventory ? (
               <View style={styles.editRow}>
-                <TextInput
-                  style={styles.editInput}
-                  value={newInventory}
-                  onChangeText={setNewInventory}
-                  keyboardType="number-pad"
-                  placeholder={product.inventory?.toString() || '0'}
-                  autoFocus
-                />
-                <Button
-                  size="sm"
-                  onPress={handleInventoryUpdate}
-                  loading={updateInventory.isPending}
-                  style={styles.editButton}
-                >
-                  שמור
-                </Button>
                 <Button
                   size="sm"
                   variant="ghost"
@@ -256,15 +248,25 @@ export default function ProductDetailScreen() {
                 >
                   ביטול
                 </Button>
+                <Button
+                  size="sm"
+                  onPress={handleInventoryUpdate}
+                  loading={updateInventory.isPending}
+                  style={styles.editButton}
+                >
+                  שמור
+                </Button>
+                <TextInput
+                  style={styles.editInput}
+                  value={newInventory}
+                  onChangeText={setNewInventory}
+                  keyboardType="number-pad"
+                  placeholder={product.inventory?.toString() || '0'}
+                  autoFocus
+                />
               </View>
             ) : (
               <View style={styles.valueRow}>
-                <View style={styles.inventoryInfo}>
-                  <Text size="2xl" weight="bold">
-                    {product.inventory ?? 0}
-                  </Text>
-                  <StockBadge inventory={product.inventory} />
-                </View>
                 <Button
                   size="sm"
                   variant="outline"
@@ -275,6 +277,12 @@ export default function ProductDetailScreen() {
                 >
                   עריכה
                 </Button>
+                <View style={styles.inventoryInfo}>
+                  <StockBadge inventory={product.inventory} />
+                  <Text size="2xl" weight="bold" style={{ color: '#202223' }}>
+                    {product.inventory ?? 0}
+                  </Text>
+                </View>
               </View>
             )}
           </Card>
@@ -282,19 +290,22 @@ export default function ProductDetailScreen() {
 
         {/* Variants */}
         {product.hasVariants && variants && variants.length > 0 && (
-          <Card>
-            <Subtitle style={styles.sectionTitle}>🎨 וריאנטים</Subtitle>
+          <Card style={styles.card}>
+            <View style={styles.sectionTitleRow}>
+              <Ionicons name="color-palette-outline" size={20} color="#6D7175" />
+              <Text weight="semiBold" style={styles.sectionTitleText}>וריאנטים</Text>
+            </View>
             {variants.map((variant) => (
               <View key={variant.id} style={styles.variantRow}>
+                <View style={styles.variantRight}>
+                  <StockBadge inventory={variant.inventory} size="sm" />
+                  <Text weight="semiBold" style={{ color: '#00785C' }}>{formatCurrency(variant.price)}</Text>
+                </View>
                 <View style={styles.variantInfo}>
-                  <Text weight="medium">{variant.title}</Text>
-                  <Text color="secondary" size="sm">
+                  <Text weight="medium" style={{ textAlign: 'right', color: '#202223' }}>{variant.title}</Text>
+                  <Text size="sm" style={{ textAlign: 'right', color: '#6D7175' }}>
                     {variant.sku || 'ללא מק"ט'}
                   </Text>
-                </View>
-                <View style={styles.variantRight}>
-                  <Text weight="semiBold">{formatCurrency(variant.price)}</Text>
-                  <StockBadge inventory={variant.inventory} size="sm" />
                 </View>
               </View>
             ))}
@@ -302,45 +313,49 @@ export default function ProductDetailScreen() {
         )}
 
         {/* Additional Info */}
-        <Card>
-          <Subtitle style={styles.sectionTitle}>📋 פרטים נוספים</Subtitle>
+        <Card style={styles.card}>
+          <View style={styles.sectionTitleRow}>
+            <Ionicons name="document-text-outline" size={20} color="#6D7175" />
+            <Text weight="semiBold" style={styles.sectionTitleText}>פרטים נוספים</Text>
+          </View>
           {product.sku && (
             <View style={styles.infoRow}>
-              <Text color="secondary">מק"ט</Text>
-              <Text>{product.sku}</Text>
+              <Text style={{ color: '#202223' }}>{product.sku}</Text>
+              <Text style={{ color: '#6D7175', textAlign: 'right' }}>מק"ט</Text>
             </View>
           )}
           {product.barcode && (
             <View style={styles.infoRow}>
-              <Text color="secondary">ברקוד</Text>
-              <Text>{product.barcode}</Text>
+              <Text style={{ color: '#202223' }}>{product.barcode}</Text>
+              <Text style={{ color: '#6D7175', textAlign: 'right' }}>ברקוד</Text>
             </View>
           )}
           {product.weight && (
             <View style={styles.infoRow}>
-              <Text color="secondary">משקל</Text>
-              <Text>{product.weight} גרם</Text>
+              <Text style={{ color: '#202223' }}>{product.weight} גרם</Text>
+              <Text style={{ color: '#6D7175', textAlign: 'right' }}>משקל</Text>
             </View>
           )}
         </Card>
 
         {/* Status Toggle */}
-        <Card>
+        <Card style={styles.card}>
           <View style={styles.statusRow}>
-            <View>
-              <Text weight="medium">סטטוס מוצר</Text>
-              <Text color="secondary" size="sm">
-                {product.isActive ? 'המוצר מוצג בחנות' : 'המוצר מוסתר מהחנות'}
-              </Text>
-            </View>
             <Button
               variant={product.isActive ? 'outline' : 'primary'}
               size="sm"
               onPress={handleToggleStatus}
               loading={toggleStatus.isPending}
+              style={product.isActive ? {} : { backgroundColor: '#00785C' }}
             >
               {product.isActive ? 'השבת' : 'הפעל'}
             </Button>
+            <View style={{ alignItems: 'flex-end' }}>
+              <Text weight="medium" style={{ textAlign: 'right', color: '#202223' }}>סטטוס מוצר</Text>
+              <Text size="sm" style={{ textAlign: 'right', color: '#6D7175' }}>
+                {product.isActive ? 'המוצר מוצג בחנות' : 'המוצר מוסתר מהחנות'}
+              </Text>
+            </View>
           </View>
         </Card>
 
@@ -354,14 +369,15 @@ export default function ProductDetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.white,
   },
   scrollView: {
     flex: 1,
+    backgroundColor: '#F6F6F7',
   },
   scrollContent: {
     padding: spacing[4],
-    gap: spacing[4],
+    gap: spacing[3],
   },
   errorContainer: {
     flex: 1,
@@ -379,7 +395,7 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.lg,
   },
   imagePlaceholder: {
-    backgroundColor: colors.gray100,
+    backgroundColor: '#F6F6F7',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -400,27 +416,47 @@ const styles = StyleSheet.create({
   description: {
     marginTop: spacing[3],
   },
+  card: {
+    backgroundColor: colors.white,
+    borderRadius: borderRadius.xl,
+    borderWidth: 1,
+    borderColor: '#E1E3E5',
+    ...shadows.sm,
+  },
+  sectionTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[2],
+    marginBottom: spacing[3],
+  },
+  sectionTitleText: {
+    fontSize: 16,
+    color: '#202223',
+    textAlign: 'right',
+  },
   sectionTitle: {
     marginBottom: spacing[3],
   },
   valueRow: {
-    flexDirection: 'row-reverse',
+    flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
   editRow: {
-    flexDirection: 'row-reverse',
+    flexDirection: 'row',
     alignItems: 'center',
     gap: spacing[2],
   },
   editInput: {
     flex: 1,
-    backgroundColor: colors.gray100,
+    backgroundColor: '#F6F6F7',
     borderRadius: borderRadius.md,
     padding: spacing[3],
     fontFamily: fonts.regular,
     fontSize: 18,
     textAlign: 'right',
+    borderWidth: 1,
+    borderColor: '#E1E3E5',
   },
   editButton: {
     minWidth: 60,
@@ -429,34 +465,35 @@ const styles = StyleSheet.create({
     textDecorationLine: 'line-through',
   },
   inventoryInfo: {
-    flexDirection: 'row-reverse',
+    flexDirection: 'row',
     alignItems: 'center',
     gap: spacing[3],
   },
   variantRow: {
-    flexDirection: 'row-reverse',
+    flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingVertical: spacing[3],
     borderBottomWidth: 1,
-    borderBottomColor: colors.borderLight,
+    borderBottomColor: '#E1E3E5',
   },
   variantInfo: {
     flex: 1,
+    alignItems: 'flex-end',
   },
   variantRight: {
     alignItems: 'flex-start',
     gap: spacing[1],
   },
   infoRow: {
-    flexDirection: 'row-reverse',
+    flexDirection: 'row',
     justifyContent: 'space-between',
     paddingVertical: spacing[2],
     borderBottomWidth: 1,
-    borderBottomColor: colors.borderLight,
+    borderBottomColor: '#E1E3E5',
   },
   statusRow: {
-    flexDirection: 'row-reverse',
+    flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },

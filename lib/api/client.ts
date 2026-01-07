@@ -1,4 +1,4 @@
-import { getAuthToken, getStoreSlug, clearAllAuth } from '../utils/storage';
+import { getAuthToken, getStoreId, clearAllAuth } from '../utils/storage';
 
 const API_BASE = process.env.EXPO_PUBLIC_API_URL || 'https://quickshop.co.il/api';
 
@@ -46,10 +46,10 @@ export async function apiClient<T>(
       headers['Authorization'] = `Bearer ${token}`;
     }
     
-    // Add store slug for store-specific requests
-    const storeSlug = await getStoreSlug();
-    if (storeSlug) {
-      headers['X-Store-Slug'] = storeSlug;
+    // Add store ID for store-specific requests
+    const storeId = await getStoreId();
+    if (storeId) {
+      headers['X-Store-Id'] = storeId;
     }
   }
 

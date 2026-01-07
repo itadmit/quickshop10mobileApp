@@ -4,15 +4,15 @@
 // ============================================
 
 export const colors = {
-  // Brand
-  primary: '#3b82f6',
-  primaryDark: '#1e40af',
-  primaryLight: '#93c5fd',
+  // Brand - ירוק כהה (דומה לשופיפיי אבל שונה)
+  primary: '#00785C',
+  primaryDark: '#005A45',
+  primaryLight: '#E6F4F0',
 
-  // Secondary
-  secondary: '#8b5cf6',
-  secondaryDark: '#6d28d9',
-  secondaryLight: '#c4b5fd',
+  // Secondary - ירוק בהיר יותר
+  secondary: '#00A67E',
+  secondaryDark: '#007A5E',
+  secondaryLight: '#CCF0E3',
 
   // Status
   success: '#22c55e',
@@ -26,8 +26,8 @@ export const colors = {
 
   // Order status colors
   orderPending: '#f59e0b',
-  orderConfirmed: '#3b82f6',
-  orderProcessing: '#8b5cf6',
+  orderConfirmed: '#00785C',
+  orderProcessing: '#00A67E',
   orderShipped: '#06b6d4',
   orderDelivered: '#22c55e',
   orderCancelled: '#ef4444',
@@ -179,8 +179,8 @@ export const shadows = {
 // Order status config
 export const orderStatusConfig: Record<string, { label: string; color: string; bgColor: string }> = {
   pending: { label: 'ממתינה', color: colors.orderPending, bgColor: colors.warningLight },
-  confirmed: { label: 'אושרה', color: colors.orderConfirmed, bgColor: colors.primaryLight },
-  processing: { label: 'בטיפול', color: colors.orderProcessing, bgColor: colors.secondaryLight },
+  confirmed: { label: 'אושרה', color: colors.orderConfirmed, bgColor: '#E6F4F0' },
+  processing: { label: 'בטיפול', color: colors.orderProcessing, bgColor: '#CCF0E3' },
   shipped: { label: 'נשלחה', color: colors.orderShipped, bgColor: colors.infoLight },
   delivered: { label: 'נמסרה', color: colors.orderDelivered, bgColor: colors.successLight },
   cancelled: { label: 'בוטלה', color: colors.orderCancelled, bgColor: colors.errorLight },

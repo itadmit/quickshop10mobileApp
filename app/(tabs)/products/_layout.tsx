@@ -13,7 +13,6 @@ export default function ProductsLayout() {
           fontSize: 18,
         },
         headerTitleAlign: 'center',
-        animation: 'slide_from_left',
       }}
     >
       <Stack.Screen

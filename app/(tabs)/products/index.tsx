@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import { Ionicons } from '@expo/vector-icons';
 import {
   View,
   FlatList,
@@ -21,6 +22,7 @@ import {
   spacing,
   fonts,
   borderRadius,
+  shadows,
 } from '@/components/ui';
 import { formatCurrency } from '@/lib/utils/format';
 import type { Product } from '@/types';
@@ -82,7 +84,7 @@ export default function ProductsListScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
+    <SafeAreaView style={styles.container} edges={[]}>
       {/* Header Actions */}
       <View style={styles.headerActions}>
         <View style={styles.searchContainer}>
@@ -96,7 +98,7 @@ export default function ProductsListScreen() {
           />
         </View>
         <TouchableOpacity style={styles.scanButton} onPress={handleScannerPress}>
-          <Text style={{ fontSize: 20 }}>📷</Text>
+          <Ionicons name="camera-outline" size={20} color={colors.white} />
         </TouchableOpacity>
       </View>
 
@@ -104,7 +106,6 @@ export default function ProductsListScreen() {
       <View style={styles.tabsContainer}>
         <FlatList
           horizontal
-          inverted
           showsHorizontalScrollIndicator={false}
           data={FILTER_TABS}
           keyExtractor={(item) => item.key}
@@ -126,7 +127,10 @@ export default function ProductsListScreen() {
               >
                 {item.label}
                 {stats && getFilterCount(item.key, stats) > 0 && (
-                  <Text style={styles.tabCount}>
+                  <Text style={[
+                    styles.tabCount,
+                    selectedFilter === item.key && styles.tabCountActive
+                  ]}>
                     {' '}({getFilterCount(item.key, stats)})
                   </Text>
                 )}
@@ -150,17 +154,17 @@ export default function ProductsListScreen() {
         onEndReachedThreshold={0.5}
         ListEmptyComponent={
           <EmptyState
-            icon={<Text style={{ fontSize: 48 }}>🛍️</Text>}
+            icon={<Ionicons name="bag-outline" size={48} color={colors.textMuted} />}
             title="אין מוצרים"
             description={searchQuery ? 'נסה חיפוש אחר' : 'הוסף מוצרים לחנות שלך'}
           />
         }
         ListFooterComponent={
-          isFetchingNextPage ? (
+          isFetchingNextPage && hasNextPage && products.length > 0 ? (
             <View style={styles.loadingMore}>
               <Text color="secondary">טוען עוד...</Text>
             </View>
-          ) : null
+          ) : <View style={{ height: spacing[4] }} />
         }
       />
     </SafeAreaView>
@@ -187,24 +191,24 @@ function ProductCard({ product, onPress }: { product: Product; onPress: () => vo
           <Image source={{ uri: product.imageUrl }} style={styles.productImage} />
         ) : (
           <View style={[styles.productImage, styles.productImagePlaceholder]}>
-            <Text style={{ fontSize: 24 }}>🖼️</Text>
+            <Ionicons name="image-outline" size={24} color={colors.textMuted} />
           </View>
         )}
         <View style={styles.productInfo}>
-          <Text weight="semiBold" numberOfLines={2}>
+          <Text weight="semiBold" numberOfLines={2} style={styles.productName}>
             {product.name}
           </Text>
-          <View style={styles.productMeta}>
-            <Text weight="bold" style={{ color: colors.primary }}>
-              {product.price ? formatCurrency(product.price) : 'ללא מחיר'}
-            </Text>
-            <StockBadge inventory={product.inventory} size="sm" />
-          </View>
+          <Text weight="bold" style={styles.productPrice}>
+            {product.price ? formatCurrency(product.price) : 'ללא מחיר'}
+          </Text>
           {product.category && (
-            <Text color="muted" size="xs">
+            <Text color="muted" size="xs" style={styles.productCategory}>
               {product.category.name}
             </Text>
           )}
+        </View>
+        <View style={styles.productRight}>
+          <StockBadge inventory={product.inventory} size="sm" />
         </View>
         {!product.isActive && (
           <View style={styles.draftBadge}>
@@ -221,10 +225,10 @@ function ProductCard({ product, onPress }: { product: Product; onPress: () => vo
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: '#F6F6F7',
   },
   headerActions: {
-    flexDirection: 'row-reverse',
+    flexDirection: 'row', // ב-RTL, row = ימין לשמאל
     paddingHorizontal: spacing[4],
     paddingVertical: spacing[2],
     gap: spacing[2],
@@ -233,23 +237,25 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   searchInput: {
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.md,
+    backgroundColor: colors.white,
+    borderRadius: borderRadius.xl,
     paddingHorizontal: spacing[4],
     paddingVertical: spacing[3],
     fontFamily: fonts.regular,
     fontSize: 16,
     textAlign: 'right',
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: '#E1E3E5',
+    ...shadows.sm,
   },
   scanButton: {
     width: 48,
     height: 48,
-    borderRadius: borderRadius.md,
-    backgroundColor: colors.primary,
+    borderRadius: borderRadius.xl,
+    backgroundColor: '#00785C',
     alignItems: 'center',
     justifyContent: 'center',
+    ...shadows.sm,
   },
   tabsContainer: {
     borderBottomWidth: 1,
@@ -264,33 +270,47 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing[4],
     paddingVertical: spacing[2],
     borderRadius: borderRadius.full,
-    backgroundColor: colors.gray100,
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: '#E1E3E5',
   },
   tabActive: {
-    backgroundColor: colors.primary,
+    backgroundColor: '#00785C',
+    borderColor: '#00785C',
   },
   tabText: {
-    color: colors.textSecondary,
+    color: '#6D7175',
+    textAlign: 'center',
   },
   tabTextActive: {
     color: colors.white,
+    textAlign: 'center',
   },
   tabCount: {
     opacity: 0.8,
   },
+  tabCountActive: {
+    color: colors.white,
+    opacity: 1,
+  },
   listContent: {
     padding: spacing[4],
-    paddingBottom: spacing[10],
   },
   productCard: {
     marginBottom: spacing[3],
+    borderRadius: borderRadius.xl,
+    borderWidth: 1,
+    borderColor: '#E1E3E5',
+    backgroundColor: colors.white,
+    ...shadows.sm,
+    padding: spacing[3],
   },
   productContent: {
-    flexDirection: 'row-reverse',
+    flexDirection: 'row', // ב-RTL, row = ימין לשמאל
   },
   productImage: {
-    width: 72,
-    height: 72,
+    width: 60,
+    height: 60,
     borderRadius: borderRadius.md,
   },
   productImagePlaceholder: {
@@ -300,14 +320,25 @@ const styles = StyleSheet.create({
   },
   productInfo: {
     flex: 1,
-    marginRight: spacing[3],
+    marginLeft: spacing[3], // ב-RTL, marginLeft = ימין (רווח מהתמונה)
     justifyContent: 'center',
+    alignItems: 'flex-start',
+    gap: spacing[1],
   },
-  productMeta: {
-    flexDirection: 'row-reverse',
-    alignItems: 'center',
-    gap: spacing[2],
-    marginTop: spacing[1],
+  productName: {
+    textAlign: 'right',
+    fontSize: 14,
+    color: '#202223',
+  },
+  productPrice: {
+    textAlign: 'right',
+    color: '#00785C',
+  },
+  productCategory: {
+    textAlign: 'right',
+  },
+  productRight: {
+    alignItems: 'flex-start', // ב-RTL עם row, flex-start = שמאל המסך
   },
   draftBadge: {
     position: 'absolute',

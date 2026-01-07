@@ -54,8 +54,8 @@ export const Input = forwardRef<TextInput, InputProps>(
             ref={ref}
             style={[
               styles.input,
-              leftIcon && styles.inputWithLeftIcon,
-              rightIcon && styles.inputWithRightIcon,
+              leftIcon ? styles.inputWithLeftIcon : undefined,
+              rightIcon ? styles.inputWithRightIcon : undefined,
               inputStyle,
             ]}
             placeholderTextColor={colors.textMuted}
@@ -95,6 +95,8 @@ const styles = StyleSheet.create({
   },
   label: {
     marginBottom: spacing[2],
+    textAlign: 'right',
+    alignSelf: 'flex-end',
   },
   inputWrapper: {
     flexDirection: 'row-reverse', // RTL

@@ -83,9 +83,9 @@ export function Caption({ children, ...props }: Omit<TextProps, 'size' | 'color'
   );
 }
 
-export function Label({ children, ...props }: Omit<TextProps, 'size' | 'weight'>) {
+export function Label({ children, style, ...props }: Omit<TextProps, 'size' | 'weight'>) {
   return (
-    <Text size="sm" weight="medium" {...props}>
+    <Text size="sm" weight="medium" style={[{ textAlign: 'right' }, style]} {...props}>
       {children}
     </Text>
   );

@@ -1,23 +1,29 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
 import { View, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Text, colors, fonts } from '@/components/ui';
 import { useAppStore } from '@/stores';
 
-// Tab icons (using text for simplicity - can replace with proper icons)
+// Tab icons
 function TabIcon({ name, focused }: { name: string; focused: boolean }) {
-  const icons: Record<string, string> = {
-    index: '🏠',
-    orders: '📦',
-    products: '🛍️',
-    customers: '👥',
-    more: '⚙️',
+  const iconMap: Record<string, { name: keyof typeof Ionicons.glyphMap; outline: keyof typeof Ionicons.glyphMap }> = {
+    index: { name: 'home', outline: 'home-outline' },
+    orders: { name: 'cube', outline: 'cube-outline' },
+    products: { name: 'bag', outline: 'bag-outline' },
+    customers: { name: 'people', outline: 'people-outline' },
+    more: { name: 'settings', outline: 'settings-outline' },
   };
 
+  const icon = iconMap[name] || { name: 'phone-portrait', outline: 'phone-portrait-outline' };
+  const iconName = focused ? icon.name : icon.outline;
+
   return (
-    <Text style={{ fontSize: 22, opacity: focused ? 1 : 0.6 }}>
-      {icons[name] || '📱'}
-    </Text>
+    <Ionicons 
+      name={iconName} 
+      size={24} 
+      color={focused ? colors.primary : colors.gray400} 
+    />
   );
 }
 
@@ -49,13 +55,14 @@ export default function TabsLayout() {
         },
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.gray400,
+        tabBarPosition: 'bottom',
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
           title: 'בית',
-          headerTitle: 'דשבורד',
+          headerShown: false, // Using custom header in the screen
           tabBarIcon: ({ focused }) => <TabIcon name="index" focused={focused} />,
         }}
       />

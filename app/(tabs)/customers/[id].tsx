@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Ionicons } from '@expo/vector-icons';
 import {
   View,
   ScrollView,
@@ -23,6 +24,7 @@ import {
   spacing,
   borderRadius,
   fonts,
+  shadows,
 } from '@/components/ui';
 import { formatCurrency, formatDateTime, formatPhone, formatAddress } from '@/lib/utils/format';
 
@@ -98,7 +100,7 @@ export default function CustomerDetailScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
+    <SafeAreaView style={styles.container} edges={[]}>
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
@@ -121,14 +123,14 @@ export default function CustomerDetailScreen() {
           {/* Action Buttons */}
           <View style={styles.actions}>
             <TouchableOpacity style={styles.actionButton} onPress={handleEmail}>
-              <Text style={{ fontSize: 20 }}>📧</Text>
+              <Ionicons name="mail-outline" size={20} color={colors.textSecondary} />
               <Text size="sm" color="secondary">
                 אימייל
               </Text>
             </TouchableOpacity>
             {customer.phone && (
               <TouchableOpacity style={styles.actionButton} onPress={handleCall}>
-                <Text style={{ fontSize: 20 }}>📞</Text>
+                <Ionicons name="call-outline" size={20} color={colors.textSecondary} />
                 <Text size="sm" color="secondary">
                   טלפון
                 </Text>
@@ -166,9 +168,12 @@ export default function CustomerDetailScreen() {
         </View>
 
         {/* Credit Section */}
-        <Card>
+        <Card style={styles.card}>
           <View style={styles.sectionHeader}>
-            <Subtitle>💳 קרדיט</Subtitle>
+            <View style={styles.sectionTitleRow}>
+              <Ionicons name="card-outline" size={20} color="#6D7175" />
+              <Text weight="semiBold" style={styles.sectionTitleText}>קרדיט</Text>
+            </View>
             <Button
               size="sm"
               variant="outline"
@@ -240,53 +245,59 @@ export default function CustomerDetailScreen() {
         </Card>
 
         {/* Contact Info */}
-        <Card>
-          <Subtitle style={styles.sectionTitle}>📋 פרטים</Subtitle>
+        <Card style={styles.card}>
+          <View style={styles.sectionTitleRow}>
+            <Ionicons name="document-text-outline" size={20} color="#6D7175" />
+            <Text weight="semiBold" style={styles.sectionTitleText}>פרטים</Text>
+          </View>
           {customer.phone && (
             <View style={styles.infoRow}>
-              <Text color="secondary">טלפון</Text>
-              <Text>{formatPhone(customer.phone)}</Text>
+              <Text style={{ color: '#202223' }}>{formatPhone(customer.phone)}</Text>
+              <Text style={{ color: '#6D7175', textAlign: 'right' }}>טלפון</Text>
             </View>
           )}
           {customer.defaultAddress && (
             <View style={styles.infoRow}>
-              <Text color="secondary">כתובת</Text>
-              <Text style={{ flex: 1, textAlign: 'left' }}>
+              <Text style={{ flex: 1, textAlign: 'left', color: '#202223' }}>
                 {formatAddress(customer.defaultAddress)}
               </Text>
+              <Text style={{ color: '#6D7175', textAlign: 'right' }}>כתובת</Text>
             </View>
           )}
           <View style={styles.infoRow}>
-            <Text color="secondary">לקוח מאז</Text>
-            <Text>{formatDateTime(customer.createdAt)}</Text>
+            <Text style={{ color: '#202223' }}>{formatDateTime(customer.createdAt)}</Text>
+            <Text style={{ color: '#6D7175', textAlign: 'right' }}>לקוח מאז</Text>
           </View>
           <View style={styles.infoRow}>
-            <Text color="secondary">דיוור</Text>
             <Badge variant={customer.acceptsMarketing ? 'success' : 'default'} size="sm">
               {customer.acceptsMarketing ? 'מאשר' : 'לא מאשר'}
             </Badge>
+            <Text style={{ color: '#6D7175', textAlign: 'right' }}>דיוור</Text>
           </View>
         </Card>
 
         {/* Orders History */}
         {orders && orders.length > 0 && (
-          <Card>
-            <Subtitle style={styles.sectionTitle}>📦 הזמנות</Subtitle>
+          <Card style={styles.card}>
+            <View style={styles.sectionTitleRow}>
+              <Ionicons name="cube-outline" size={20} color="#6D7175" />
+              <Text weight="semiBold" style={styles.sectionTitleText}>הזמנות</Text>
+            </View>
             {orders.map((order) => (
               <TouchableOpacity
                 key={order.id}
                 style={styles.orderRow}
                 onPress={() => handleOrderPress(order.id)}
               >
-                <View>
-                  <Text weight="medium">#{order.orderNumber}</Text>
-                  <Text color="muted" size="xs">
+                <View style={{ alignItems: 'flex-start' }}>
+                  <Text weight="semiBold" style={{ color: '#00785C' }}>{formatCurrency(order.total)}</Text>
+                  <OrderStatusBadge status={order.status} size="sm" />
+                </View>
+                <View style={{ alignItems: 'flex-end' }}>
+                  <Text weight="medium" style={{ color: '#202223', textAlign: 'right' }}>#{order.orderNumber}</Text>
+                  <Text size="xs" style={{ color: '#9CA3AF', textAlign: 'right' }}>
                     {formatDateTime(order.createdAt)}
                   </Text>
-                </View>
-                <View style={{ alignItems: 'flex-start' }}>
-                  <Text weight="semiBold">{formatCurrency(order.total)}</Text>
-                  <OrderStatusBadge status={order.status} size="sm" />
                 </View>
               </TouchableOpacity>
             ))}
@@ -295,9 +306,12 @@ export default function CustomerDetailScreen() {
 
         {/* Notes */}
         {customer.notes && (
-          <Card>
-            <Subtitle style={styles.sectionTitle}>📝 הערות</Subtitle>
-            <Text color="secondary">{customer.notes}</Text>
+          <Card style={styles.card}>
+            <View style={styles.sectionTitleRow}>
+              <Ionicons name="create-outline" size={20} color="#6D7175" />
+              <Text weight="semiBold" style={styles.sectionTitleText}>הערות</Text>
+            </View>
+            <Text style={{ textAlign: 'right', color: '#6D7175' }}>{customer.notes}</Text>
           </Card>
         )}
 
@@ -311,14 +325,15 @@ export default function CustomerDetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.white,
   },
   scrollView: {
     flex: 1,
+    backgroundColor: '#F6F6F7',
   },
   scrollContent: {
     padding: spacing[4],
-    gap: spacing[4],
+    gap: spacing[3],
   },
   errorContainer: {
     flex: 1,
@@ -329,12 +344,17 @@ const styles = StyleSheet.create({
   headerCard: {
     alignItems: 'center',
     padding: spacing[6],
+    backgroundColor: colors.white,
+    borderRadius: borderRadius.xl,
+    borderWidth: 1,
+    borderColor: '#E1E3E5',
+    ...shadows.sm,
   },
   avatar: {
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: colors.primary,
+    backgroundColor: '#00785C',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -354,6 +374,11 @@ const styles = StyleSheet.create({
   statCard: {
     flex: 1,
     padding: spacing[3],
+    backgroundColor: colors.white,
+    borderRadius: borderRadius.xl,
+    borderWidth: 1,
+    borderColor: '#E1E3E5',
+    ...shadows.sm,
   },
   sectionHeader: {
     flexDirection: 'row-reverse',
@@ -371,40 +396,60 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    backgroundColor: colors.gray100,
+    backgroundColor: '#F6F6F7',
     borderRadius: borderRadius.md,
     padding: spacing[3],
     fontFamily: fonts.regular,
     fontSize: 14,
     textAlign: 'right',
+    borderWidth: 1,
+    borderColor: '#E1E3E5',
   },
   creditHistory: {
     borderTopWidth: 1,
-    borderTopColor: colors.borderLight,
+    borderTopColor: '#E1E3E5',
     paddingTop: spacing[3],
   },
   creditRow: {
-    flexDirection: 'row-reverse',
+    flexDirection: 'row',
     justifyContent: 'space-between',
     paddingVertical: spacing[2],
     borderBottomWidth: 1,
-    borderBottomColor: colors.borderLight,
+    borderBottomColor: '#E1E3E5',
   },
   infoRow: {
-    flexDirection: 'row-reverse',
+    flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingVertical: spacing[2],
     borderBottomWidth: 1,
-    borderBottomColor: colors.borderLight,
+    borderBottomColor: '#E1E3E5',
   },
   orderRow: {
-    flexDirection: 'row-reverse',
+    flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingVertical: spacing[3],
     borderBottomWidth: 1,
-    borderBottomColor: colors.borderLight,
+    borderBottomColor: '#E1E3E5',
+  },
+  card: {
+    backgroundColor: colors.white,
+    borderRadius: borderRadius.xl,
+    borderWidth: 1,
+    borderColor: '#E1E3E5',
+    ...shadows.sm,
+  },
+  sectionTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[2],
+    marginBottom: spacing[3],
+  },
+  sectionTitleText: {
+    fontSize: 16,
+    color: '#202223',
+    textAlign: 'right',
   },
 });
 

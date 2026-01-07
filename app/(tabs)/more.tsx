@@ -1,4 +1,5 @@
 import React from 'react';
+import { Ionicons } from '@expo/vector-icons';
 import {
   View,
   ScrollView,
@@ -22,7 +23,7 @@ import {
 } from '@/components/ui';
 
 interface MenuItemProps {
-  icon: string;
+  icon: keyof typeof Ionicons.glyphMap;
   title: string;
   subtitle?: string;
   badge?: string;
@@ -32,23 +33,21 @@ interface MenuItemProps {
 function MenuItem({ icon, title, subtitle, badge, onPress }: MenuItemProps) {
   return (
     <TouchableOpacity style={styles.menuItem} onPress={onPress}>
-      <Text style={styles.menuIcon}>{icon}</Text>
-      <View style={styles.menuContent}>
-        <Text weight="medium">{title}</Text>
-        {subtitle && (
-          <Text color="secondary" size="sm">
-            {subtitle}
-          </Text>
-        )}
-      </View>
+      <Ionicons name="chevron-back" size={16} color={colors.textMuted} />
       {badge && (
         <Badge variant="error" size="sm">
           {badge}
         </Badge>
       )}
-      <Text color="muted" style={styles.menuArrow}>
-        ←
-      </Text>
+      <View style={styles.menuContent}>
+        <Text weight="medium" style={{ textAlign: 'right' }}>{title}</Text>
+        {subtitle && (
+          <Text color="secondary" size="sm" style={{ textAlign: 'right' }}>
+            {subtitle}
+          </Text>
+        )}
+      </View>
+      <Ionicons name={icon} size={20} color={colors.textSecondary} style={styles.menuIcon} />
     </TouchableOpacity>
   );
 }
@@ -57,9 +56,11 @@ function MenuSection({ title, children }: { title?: string; children: React.Reac
   return (
     <View style={styles.menuSection}>
       {title && (
-        <Text color="secondary" size="sm" style={styles.sectionTitle}>
-          {title}
-        </Text>
+        <View style={styles.sectionTitleContainer}>
+          <Text color="secondary" size="sm" style={styles.sectionTitle}>
+            {title}
+          </Text>
+        </View>
       )}
       <Card padding={0}>{children}</Card>
     </View>
@@ -110,7 +111,7 @@ export default function MoreScreen() {
   const appVersion = Constants.expoConfig?.version || '1.0.0';
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
+    <SafeAreaView style={styles.container} edges={[]}>
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
@@ -138,22 +139,22 @@ export default function MoreScreen() {
         {/* Management */}
         <MenuSection title="ניהול">
           <MenuItem
-            icon="🏷️"
+            icon="pricetag-outline"
             title="קופונים והנחות"
             onPress={() => Alert.alert('בקרוב', 'תכונה זו תהיה זמינה בקרוב')}
           />
           <MenuItem
-            icon="📊"
+            icon="stats-chart-outline"
             title="דוחות ואנליטיקס"
             onPress={() => Alert.alert('בקרוב', 'תכונה זו תהיה זמינה בקרוב')}
           />
           <MenuItem
-            icon="🔄"
+            icon="refresh-outline"
             title="החזרות והחלפות"
             onPress={() => Alert.alert('בקרוב', 'תכונה זו תהיה זמינה בקרוב')}
           />
           <MenuItem
-            icon="👑"
+            icon="star-outline"
             title="משפיענים"
             onPress={() => Alert.alert('בקרוב', 'תכונה זו תהיה זמינה בקרוב')}
           />
@@ -162,19 +163,19 @@ export default function MoreScreen() {
         {/* Settings */}
         <MenuSection title="הגדרות">
           <MenuItem
-            icon="⚙️"
+            icon="settings-outline"
             title="הגדרות חנות"
             subtitle="לניהול מתקדם עבור לאתר"
             onPress={handleOpenWebDashboard}
           />
           <MenuItem
-            icon="🔔"
+            icon="notifications-outline"
             title="הגדרות התראות"
             onPress={() => Alert.alert('בקרוב', 'תכונה זו תהיה זמינה בקרוב')}
           />
           {stores.length > 1 && (
             <MenuItem
-              icon="🏪"
+              icon="storefront-outline"
               title="החלפת חנות"
               subtitle={`${stores.length} חנויות`}
               onPress={handleSwitchStore}
@@ -185,12 +186,12 @@ export default function MoreScreen() {
         {/* Support */}
         <MenuSection title="עזרה">
           <MenuItem
-            icon="❓"
+            icon="help-circle-outline"
             title="מרכז עזרה"
             onPress={() => Linking.openURL('https://quickshop.co.il/help')}
           />
           <MenuItem
-            icon="💬"
+            icon="chatbubble-outline"
             title="צור קשר"
             subtitle="support@quickshop.co.il"
             onPress={handleSupport}
@@ -200,7 +201,7 @@ export default function MoreScreen() {
         {/* Account */}
         <MenuSection title="חשבון">
           <MenuItem
-            icon="👤"
+            icon="person-outline"
             title={user?.name || 'המשתמש שלי'}
             subtitle={user?.email}
             onPress={() => {}}
@@ -210,7 +211,7 @@ export default function MoreScreen() {
             onPress={handleLogout}
             disabled={isLoggingOut}
           >
-            <Text style={styles.menuIcon}>🚪</Text>
+            <Ionicons name="log-out-outline" size={20} color={colors.error} style={styles.menuIcon} />
             <View style={styles.menuContent}>
               <Text weight="medium" color="error">
                 {isLoggingOut ? 'מתנתק...' : 'התנתקות'}
@@ -267,23 +268,27 @@ const styles = StyleSheet.create({
   menuSection: {
     marginBottom: spacing[4],
   },
-  sectionTitle: {
+  sectionTitleContainer: {
+    alignItems: 'flex-start', // ב-RTL, flex-end = ימין המסך
     marginBottom: spacing[2],
+  },
+  sectionTitle: {
+    textAlign: 'right',
     marginRight: spacing[2],
   },
   menuItem: {
-    flexDirection: 'row-reverse',
+    flexDirection: 'row-reverse', // ב-RTL, row = ימין לשמאל (חץ מימין, תוכן, אייקון משמאל)
     alignItems: 'center',
     padding: spacing[4],
     borderBottomWidth: 1,
     borderBottomColor: colors.borderLight,
   },
   menuIcon: {
-    fontSize: 20,
-    marginLeft: spacing[3],
+    marginRight: spacing[3], // ב-RTL, marginRight = שמאל המסך
   },
   menuContent: {
     flex: 1,
+    alignItems: 'flex-start', // יישור טקסט לימין
   },
   menuArrow: {
     fontSize: 16,

@@ -100,7 +100,7 @@ function getRoleLabel(role: Store['role']): string {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: '#F6F6F7',
   },
   header: {
     padding: spacing[6],
@@ -113,11 +113,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing[4],
   },
   storeCard: {
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.lg,
+    backgroundColor: colors.white,
+    borderRadius: borderRadius.xl,
     marginBottom: spacing[3],
     borderWidth: 1,
-    borderColor: colors.borderLight,
+    borderColor: '#E1E3E5',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
   storeContent: {
     flexDirection: 'row-reverse',
@@ -133,7 +138,7 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: borderRadius.md,
-    backgroundColor: colors.primary,
+    backgroundColor: '#00785C',
     alignItems: 'center',
     justifyContent: 'center',
   },

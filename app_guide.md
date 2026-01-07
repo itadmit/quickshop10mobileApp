@@ -359,7 +359,7 @@ const ROLE_PERMISSIONS: Record<string, Permission[]> = {
 // lib/api/client.ts
 import { getAuthToken, getStoreId } from '../utils/storage';
 
-const API_BASE = 'https://quickshop.co.il/api';
+const API_BASE = 'https://my-quickshop.com/api';
 
 export async function apiClient<T>(
   endpoint: string,
@@ -1965,7 +1965,7 @@ export function useAppLock() {
 }
 ```
 
-### RTL Support
+###  Support
 
 ```typescript
 // app.json

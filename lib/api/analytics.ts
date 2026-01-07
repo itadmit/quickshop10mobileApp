@@ -108,6 +108,25 @@ export async function getDiscounts(): Promise<{
   return api.get(`/mobile/discounts`);
 }
 
+export async function createQuickCoupon(data: {
+  code: string;
+  type: 'percentage' | 'fixed_amount';
+  value: number;
+  minimumAmount?: number;
+  usageLimit?: number;
+  endsAt?: string;
+}): Promise<{
+  success: boolean;
+  coupon: {
+    id: string;
+    code: string;
+    type: string;
+    value: number;
+  };
+}> {
+  return api.post(`/mobile/discounts/quick`, data);
+}
+
 // ============ Notifications API ============
 // Base: /api/mobile/notifications
 
@@ -151,4 +170,76 @@ export async function updateNotificationSettings(settings: {
   returnRequest?: boolean;
 }): Promise<void> {
   await api.patch(`/mobile/notifications/settings`, settings);
+}
+
+// ============ Returns API ============
+// Base: /api/mobile/returns
+
+export async function getReturns(params: {
+  page?: number;
+  limit?: number;
+  status?: string;
+  type?: 'return' | 'exchange';
+} = {}): Promise<{
+  returns: Array<{
+    id: string;
+    requestNumber: string;
+    orderId: string;
+    orderNumber: string;
+    customerName: string;
+    type: 'return' | 'exchange';
+    status: string;
+    totalValue: number;
+    reason: string;
+    createdAt: string;
+  }>;
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+  };
+  stats: {
+    pending: number;
+    approved: number;
+    completed: number;
+  };
+}> {
+  const searchParams = new URLSearchParams();
+  
+  if (params.page) searchParams.set('page', params.page.toString());
+  if (params.limit) searchParams.set('limit', params.limit.toString());
+  if (params.status) searchParams.set('status', params.status);
+  if (params.type) searchParams.set('type', params.type);
+  
+  const query = searchParams.toString();
+  return api.get(`/mobile/returns${query ? `?${query}` : ''}`);
+}
+
+// ============ Settings API ============
+// Base: /api/mobile/settings
+
+export async function getStoreSettings(): Promise<{
+  name: string;
+  email: string;
+  phone: string | null;
+  address: string | null;
+  logoUrl: string | null;
+  currency: string;
+  timezone: string;
+  language: string;
+}> {
+  return api.get(`/mobile/settings`);
+}
+
+export async function updateStoreSettings(settings: Partial<{
+  name: string;
+  email: string;
+  phone: string;
+  address: string;
+  logoUrl: string;
+  currency: string;
+  timezone: string;
+  language: string;
+}>): Promise<{ success: boolean }> {
+  return api.patch(`/mobile/settings`, settings);
 }

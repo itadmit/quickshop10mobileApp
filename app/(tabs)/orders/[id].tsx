@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Ionicons } from '@expo/vector-icons';
 import {
   View,
   ScrollView,
@@ -25,6 +26,7 @@ import {
   colors,
   spacing,
   borderRadius,
+  shadows,
 } from '@/components/ui';
 import { formatCurrency, formatDateTime, formatAddress, formatPhone } from '@/lib/utils/format';
 import type { Order, FulfillmentStatus } from '@/types';
@@ -93,7 +95,7 @@ export default function OrderDetailScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
+    <SafeAreaView style={styles.container} edges={[]}>
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
@@ -138,120 +140,136 @@ export default function OrderDetailScreen() {
         </Card>
 
         {/* Customer Info */}
-        <Card>
-          <Subtitle style={styles.sectionTitle}>👤 פרטי לקוח</Subtitle>
+        <Card style={styles.card}>
+          <View style={styles.sectionTitleRow}>
+            <Ionicons name="person-outline" size={20} color="#6D7175" />
+            <Text weight="semiBold" style={styles.sectionTitleText}>פרטי לקוח</Text>
+          </View>
           <View style={styles.customerRow}>
+            <TouchableOpacity style={styles.actionButton} onPress={handleCall}>
+              <Ionicons name="call-outline" size={20} color="#00785C" />
+            </TouchableOpacity>
             <View style={styles.customerInfo}>
-              <Text weight="medium">{order.customerName}</Text>
-              <Text color="secondary" size="sm">
+              <Text weight="medium" style={{ textAlign: 'right', color: '#202223' }}>{order.customerName}</Text>
+              <Text color="secondary" size="sm" style={{ textAlign: 'right' }}>
                 {order.customerEmail}
               </Text>
               {order.customerPhone && (
-                <Text color="secondary" size="sm">
+                <Text color="secondary" size="sm" style={{ textAlign: 'right' }}>
                   {formatPhone(order.customerPhone)}
                 </Text>
               )}
-            </View>
-            <View style={styles.customerActions}>
-              <TouchableOpacity style={styles.actionButton} onPress={handleCall}>
-                <Text>📞</Text>
-              </TouchableOpacity>
             </View>
           </View>
         </Card>
 
         {/* Shipping Address */}
-        <Card>
-          <Subtitle style={styles.sectionTitle}>🏠 כתובת משלוח</Subtitle>
-          <Text>{formatAddress(order.shippingAddress)}</Text>
+        <Card style={styles.card}>
+          <View style={styles.sectionTitleRow}>
+            <Ionicons name="home-outline" size={20} color="#6D7175" />
+            <Text weight="semiBold" style={styles.sectionTitleText}>כתובת משלוח</Text>
+          </View>
+          <Text style={{ textAlign: 'right', color: '#202223' }}>{formatAddress(order.shippingAddress)}</Text>
           <TouchableOpacity style={styles.navigateButton} onPress={handleNavigate}>
-            <Text style={{ color: colors.primary }}>📍 נווט לכתובת</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing[1] }}>
+              <Ionicons name="navigate-outline" size={16} color="#00785C" />
+              <Text style={{ color: '#00785C' }}>נווט לכתובת</Text>
+            </View>
           </TouchableOpacity>
         </Card>
 
         {/* Order Items */}
-        <Card>
-          <Subtitle style={styles.sectionTitle}>📦 פריטים</Subtitle>
+        <Card style={styles.card}>
+          <View style={styles.sectionTitleRow}>
+            <Ionicons name="cube-outline" size={20} color="#6D7175" />
+            <Text weight="semiBold" style={styles.sectionTitleText}>פריטים</Text>
+          </View>
           {items.map((item) => (
             <View key={item.id} style={styles.itemRow}>
+              <Text weight="semiBold" style={{ color: '#00785C' }}>{formatCurrency(item.total)}</Text>
+              <View style={styles.itemInfo}>
+                <Text weight="medium" numberOfLines={2} style={{ textAlign: 'right', color: '#202223' }}>
+                  {item.name}
+                </Text>
+                {item.variantTitle && (
+                  <Text color="secondary" size="sm" style={{ textAlign: 'right' }}>
+                    {item.variantTitle}
+                  </Text>
+                )}
+                <Text color="secondary" size="sm" style={{ textAlign: 'right' }}>
+                  x{item.quantity} @ {formatCurrency(item.price)}
+                </Text>
+              </View>
               {item.imageUrl ? (
                 <Image source={{ uri: item.imageUrl }} style={styles.itemImage} />
               ) : (
                 <View style={[styles.itemImage, styles.itemImagePlaceholder]}>
-                  <Text color="muted">🖼️</Text>
+                  <Ionicons name="image-outline" size={24} color="#9CA3AF" />
                 </View>
               )}
-              <View style={styles.itemInfo}>
-                <Text weight="medium" numberOfLines={2}>
-                  {item.name}
-                </Text>
-                {item.variantTitle && (
-                  <Text color="secondary" size="sm">
-                    {item.variantTitle}
-                  </Text>
-                )}
-                <Text color="secondary" size="sm">
-                  x{item.quantity} @ {formatCurrency(item.price)}
-                </Text>
-              </View>
-              <Text weight="semiBold">{formatCurrency(item.total)}</Text>
             </View>
           ))}
         </Card>
 
         {/* Order Summary */}
-        <Card>
-          <Subtitle style={styles.sectionTitle}>💰 סיכום</Subtitle>
+        <Card style={styles.card}>
+          <View style={styles.sectionTitleRow}>
+            <Ionicons name="cash-outline" size={20} color="#6D7175" />
+            <Text weight="semiBold" style={styles.sectionTitleText}>סיכום</Text>
+          </View>
           <View style={styles.summaryRow}>
-            <Text>סכום ביניים</Text>
-            <Text>{formatCurrency(order.subtotal)}</Text>
+            <Text style={{ color: '#202223' }}>{formatCurrency(order.subtotal)}</Text>
+            <Text style={{ color: '#6D7175', textAlign: 'right' }}>סכום ביניים</Text>
           </View>
           {order.discountAmount > 0 && (
             <View style={styles.summaryRow}>
-              <Text color="success">
+              <Text style={{ color: '#00785C' }}>-{formatCurrency(order.discountAmount)}</Text>
+              <Text style={{ color: '#00785C', textAlign: 'right' }}>
                 הנחה {order.discountCode && `(${order.discountCode})`}
               </Text>
-              <Text color="success">-{formatCurrency(order.discountAmount)}</Text>
             </View>
           )}
           <View style={styles.summaryRow}>
-            <Text>משלוח</Text>
-            <Text>{formatCurrency(order.shippingAmount)}</Text>
+            <Text style={{ color: '#202223' }}>{formatCurrency(order.shippingAmount)}</Text>
+            <Text style={{ color: '#6D7175', textAlign: 'right' }}>משלוח</Text>
           </View>
           {order.taxAmount > 0 && (
             <View style={styles.summaryRow}>
-              <Text>מע"מ</Text>
-              <Text>{formatCurrency(order.taxAmount)}</Text>
+              <Text style={{ color: '#202223' }}>{formatCurrency(order.taxAmount)}</Text>
+              <Text style={{ color: '#6D7175', textAlign: 'right' }}>מע"מ</Text>
             </View>
           )}
           <View style={[styles.summaryRow, styles.totalRow]}>
-            <Text weight="bold" size="lg">
-              סה"כ
-            </Text>
-            <Text weight="bold" size="lg">
+            <Text weight="bold" size="lg" style={{ color: '#00785C' }}>
               {formatCurrency(order.total)}
+            </Text>
+            <Text weight="bold" size="lg" style={{ color: '#202223', textAlign: 'right' }}>
+              סה"כ
             </Text>
           </View>
         </Card>
 
         {/* Notes */}
         {(order.note || order.internalNote) && (
-          <Card>
-            <Subtitle style={styles.sectionTitle}>📝 הערות</Subtitle>
+          <Card style={styles.card}>
+            <View style={styles.sectionTitleRow}>
+              <Ionicons name="create-outline" size={20} color="#6D7175" />
+              <Text weight="semiBold" style={styles.sectionTitleText}>הערות</Text>
+            </View>
             {order.note && (
               <View style={styles.noteSection}>
-                <Text size="sm" color="secondary">
+                <Text size="sm" style={{ color: '#6D7175', textAlign: 'right', marginBottom: spacing[1] }}>
                   הערת לקוח:
                 </Text>
-                <Text>{order.note}</Text>
+                <Text style={{ textAlign: 'right', color: '#202223' }}>{order.note}</Text>
               </View>
             )}
             {order.internalNote && (
               <View style={styles.noteSection}>
-                <Text size="sm" color="secondary">
+                <Text size="sm" style={{ color: '#6D7175', textAlign: 'right', marginBottom: spacing[1] }}>
                   הערה פנימית:
                 </Text>
-                <Text>{order.internalNote}</Text>
+                <Text style={{ textAlign: 'right', color: '#202223' }}>{order.internalNote}</Text>
               </View>
             )}
           </Card>
@@ -259,17 +277,20 @@ export default function OrderDetailScreen() {
 
         {/* Timeline */}
         {timeline && timeline.length > 0 && (
-          <Card>
-            <Subtitle style={styles.sectionTitle}>📋 היסטוריה</Subtitle>
+          <Card style={styles.card}>
+            <View style={styles.sectionTitleRow}>
+              <Ionicons name="document-text-outline" size={20} color="#6D7175" />
+              <Text weight="semiBold" style={styles.sectionTitleText}>היסטוריה</Text>
+            </View>
             {timeline.map((event, index) => (
               <View key={index} style={styles.timelineItem}>
-                <View style={styles.timelineDot} />
                 <View style={styles.timelineContent}>
-                  <Text size="sm">{event.description}</Text>
-                  <Text size="xs" color="muted">
+                  <Text size="sm" style={{ textAlign: 'right', color: '#202223' }}>{event.description}</Text>
+                  <Text size="xs" style={{ textAlign: 'right', color: '#9CA3AF' }}>
                     {formatDateTime(event.createdAt)}
                   </Text>
                 </View>
+                <View style={styles.timelineDot} />
               </View>
             ))}
           </Card>
@@ -286,8 +307,10 @@ export default function OrderDetailScreen() {
             fullWidth
             onPress={() => handleStatusChange('processing')}
             loading={updateStatus.isPending}
+            icon={<Ionicons name="checkmark-circle" size={18} color={colors.white} />}
+            iconPosition="right"
           >
-            ✓ התחל טיפול
+            התחל טיפול
           </Button>
         )}
         {order.status === 'processing' && (
@@ -295,8 +318,10 @@ export default function OrderDetailScreen() {
             fullWidth
             onPress={() => handleStatusChange('shipped')}
             loading={updateStatus.isPending}
+            icon={<Ionicons name="checkmark-circle" size={18} color={colors.white} />}
+            iconPosition="right"
           >
-            ✓ סמן כנשלחה
+            סמן כנשלחה
           </Button>
         )}
         {order.status === 'shipped' && (
@@ -304,8 +329,10 @@ export default function OrderDetailScreen() {
             fullWidth
             onPress={() => handleStatusChange('delivered')}
             loading={updateStatus.isPending}
+            icon={<Ionicons name="checkmark-circle" size={18} color={colors.white} />}
+            iconPosition="right"
           >
-            ✓ סמן כנמסרה
+            סמן כנמסרה
           </Button>
         )}
       </View>
@@ -316,14 +343,15 @@ export default function OrderDetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.white,
   },
   scrollView: {
     flex: 1,
+    backgroundColor: '#F6F6F7',
   },
   scrollContent: {
     padding: spacing[4],
-    gap: spacing[4],
+    gap: spacing[3],
   },
   errorContainer: {
     flex: 1,
@@ -333,9 +361,14 @@ const styles = StyleSheet.create({
   },
   statusCard: {
     padding: spacing[4],
+    backgroundColor: colors.white,
+    borderRadius: borderRadius.xl,
+    borderWidth: 1,
+    borderColor: '#E1E3E5',
+    ...shadows.sm,
   },
   statusHeader: {
-    flexDirection: 'row-reverse',
+    flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
@@ -346,8 +379,8 @@ const styles = StyleSheet.create({
     marginTop: spacing[3],
     paddingTop: spacing[3],
     borderTopWidth: 1,
-    borderTopColor: colors.borderLight,
-    flexDirection: 'row-reverse',
+    borderTopColor: '#E1E3E5',
+    flexDirection: 'row',
     flexWrap: 'wrap',
     gap: spacing[2],
   },
@@ -355,43 +388,68 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing[3],
     paddingVertical: spacing[2],
     borderRadius: borderRadius.full,
-    backgroundColor: colors.gray100,
+    backgroundColor: '#F6F6F7',
   },
   statusOptionActive: {
-    backgroundColor: colors.primaryLight,
+    backgroundColor: '#E4F8F0',
+    borderWidth: 1,
+    borderColor: '#00785C',
   },
   sectionTitle: {
     marginBottom: spacing[3],
   },
+  card: {
+    backgroundColor: colors.white,
+    borderRadius: borderRadius.xl,
+    borderWidth: 1,
+    borderColor: '#E1E3E5',
+    ...shadows.sm,
+  },
+  sectionTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[2],
+    marginBottom: spacing[3],
+  },
+  sectionTitleText: {
+    fontSize: 16,
+    color: '#202223',
+    textAlign: 'right',
+  },
   customerRow: {
-    flexDirection: 'row-reverse',
+    flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'flex-start',
   },
   customerInfo: {
     flex: 1,
+    alignItems: 'flex-end',
   },
   customerActions: {
-    flexDirection: 'row-reverse',
+    flexDirection: 'row',
     gap: spacing[2],
   },
   actionButton: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: colors.gray100,
+    backgroundColor: '#F6F6F7',
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#E1E3E5',
   },
   navigateButton: {
     marginTop: spacing[3],
     paddingVertical: spacing[2],
   },
   itemRow: {
-    flexDirection: 'row-reverse',
+    flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: spacing[3],
     borderBottomWidth: 1,
-    borderBottomColor: colors.borderLight,
+    borderBottomColor: '#E1E3E5',
+    gap: spacing[3],
   },
   itemImage: {
     width: 56,
@@ -399,22 +457,22 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.md,
   },
   itemImagePlaceholder: {
-    backgroundColor: colors.gray100,
+    backgroundColor: '#F6F6F7',
     alignItems: 'center',
     justifyContent: 'center',
   },
   itemInfo: {
     flex: 1,
-    marginHorizontal: spacing[3],
+    alignItems: 'flex-end',
   },
   summaryRow: {
-    flexDirection: 'row-reverse',
+    flexDirection: 'row',
     justifyContent: 'space-between',
     paddingVertical: spacing[2],
   },
   totalRow: {
     borderTopWidth: 1,
-    borderTopColor: colors.borderLight,
+    borderTopColor: '#E1E3E5',
     marginTop: spacing[2],
     paddingTop: spacing[3],
   },
@@ -422,26 +480,27 @@ const styles = StyleSheet.create({
     marginBottom: spacing[3],
   },
   timelineItem: {
-    flexDirection: 'row-reverse',
+    flexDirection: 'row',
     marginBottom: spacing[3],
+    gap: spacing[3],
   },
   timelineDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: colors.primary,
+    backgroundColor: '#00785C',
     marginTop: 6,
-    marginLeft: spacing[3],
   },
   timelineContent: {
     flex: 1,
+    alignItems: 'flex-end',
   },
   bottomAction: {
     padding: spacing[4],
     paddingBottom: spacing[6],
-    backgroundColor: colors.surface,
+    backgroundColor: colors.white,
     borderTopWidth: 1,
-    borderTopColor: colors.borderLight,
+    borderTopColor: '#E1E3E5',
   },
 });
 
