@@ -2,7 +2,16 @@
   "expo": {
     "name": "QuickShop",
     "slug": "quickshop-mobile",
-    "version": "1.0.3",
+    "version": "1.1.4",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/46d095a6-3316-471d-bb1c-343391981373",
+      "enabled": true,
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 0
+    },
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
@@ -10,6 +19,7 @@
     "scheme": "quickshop",
     "extra": {
       "supportsRTL": true,
+      "forcesRTL": true,
       "router": {
         "root": "./app"
       },
@@ -20,19 +30,27 @@
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#00785C"
+      "backgroundColor": "#FFFFFF"
     },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.quickshop.mobile",
-      "buildNumber": "4",
+      "buildNumber": "19",
       "infoPlist": {
         "NSCameraUsageDescription": "אנחנו צריכים גישה למצלמה כדי לסרוק ברקודים",
-        "ITSAppUsesNonExemptEncryption": false
+        "NSPhotoLibraryUsageDescription": "אנחנו צריכים גישה לתמונות כדי להעלות תמונות מוצרים",
+        "ITSAppUsesNonExemptEncryption": false,
+        "CFBundleDevelopmentRegion": "he",
+        "CFBundleAllowMixedLocalizations": true
       }
+    },
+    "locales": {
+      "he": "./locales/he.json"
     },
     "android": {
       "package": "com.quickshop.mobile",
+      "versionCode": 19,
+      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#00785C"
@@ -43,12 +61,9 @@
         "android.permission.RECORD_AUDIO"
       ]
     },
-    "web": {
-      "bundler": "metro",
-      "output": "static",
-      "favicon": "./assets/favicon.png"
-    },
+    "platforms": ["ios", "android"],
     "plugins": [
+      "./plugins/withForcedRTL",
       [
         "expo-router",
         {
@@ -69,6 +84,12 @@
           "icon": "./assets/notification-icon.png",
           "color": "#00785C",
           "sounds": ["./assets/sounds/purchase.wav"]
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "אנחנו צריכים גישה לתמונות כדי להעלות תמונות מוצרים"
         }
       ]
     ],
