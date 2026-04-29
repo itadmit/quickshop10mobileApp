@@ -2,7 +2,7 @@
   "expo": {
     "name": "QuickShop",
     "slug": "quickshop-mobile",
-    "version": "1.1.4",
+    "version": "1.1.5",
     "runtimeVersion": {
       "policy": "appVersion"
     },
@@ -35,7 +35,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.quickshop.mobile",
-      "buildNumber": "19",
+      "buildNumber": "20",
       "infoPlist": {
         "NSCameraUsageDescription": "אנחנו צריכים גישה למצלמה כדי לסרוק ברקודים",
         "NSPhotoLibraryUsageDescription": "אנחנו צריכים גישה לתמונות כדי להעלות תמונות מוצרים",
@@ -49,7 +49,7 @@
     },
     "android": {
       "package": "com.quickshop.mobile",
-      "versionCode": 19,
+      "versionCode": 20,
       "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
