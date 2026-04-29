@@ -87,15 +87,27 @@ export interface OrderItem {
   imageUrl: string | null;
 }
 
+export interface Shipment {
+  id: string;
+  trackingNumber: string | null;
+  labelUrl: string | null;
+  status: string;
+  statusDescription: string | null;
+  provider: string;
+  createdAt: string;
+}
+
 export interface Order {
   id: string;
   orderNumber: string;
   status: OrderStatus;
   financialStatus: FinancialStatus;
   fulfillmentStatus: FulfillmentStatus;
+  customStatus?: string | null;
   subtotal: number;
   discountCode: string | null;
   discountAmount: number;
+  discountDetails?: Array<{ type: string; name: string; amount: number }>;
   shippingAmount: number;
   taxAmount: number;
   creditUsed: number;
@@ -108,22 +120,32 @@ export interface Order {
   shippingAddress: Address;
   billingAddress: Address | null;
   shippingMethod: string | null;
+  paymentMethod?: string | null;
+  paymentDetails?: Record<string, unknown>;
+  paidAt?: string | null;
   note: string | null;
   internalNote: string | null;
   isRead: boolean;
+  archivedAt?: string | null;
+  source?: string | null;
+  utmSource?: string | null;
   createdAt: string;
   updatedAt: string;
   items?: OrderItem[];
+  shipments?: Shipment[];
+  itemsCount?: number;
 }
 
 export interface OrdersListParams {
   page?: number;
   limit?: number;
   status?: OrderStatus;
+  financialStatus?: FinancialStatus;
   fulfillmentStatus?: FulfillmentStatus;
   search?: string;
   dateFrom?: string;
   dateTo?: string;
+  customerId?: string;
 }
 
 export interface OrdersStats {
@@ -132,6 +154,14 @@ export interface OrdersStats {
   shipped: number;
   delivered: number;
   cancelled: number;
+  /** ספירה ללשונית "שולמו" — אופציונלי אם השרת מחזיר */
+  paid?: number;
+  /** financialStatus = 'pending' — לשונית "ממתינות לתשלום" */
+  pendingPayment?: number;
+  /** financialStatus = 'paid' AND fulfillmentStatus != 'fulfilled' — לשונית "ממתינות למשלוח" */
+  awaitingShipment?: number;
+  /** financialStatus = 'paid' AND fulfillmentStatus = 'fulfilled' — לשונית "שולמו" (הושלמו) */
+  paidShipped?: number;
 }
 
 export interface OrdersListResponse {
@@ -204,6 +234,9 @@ export interface Product {
     name: string;
     slug: string;
   } | null;
+  // Price range for products with variants (from API)
+  minPrice?: number | null;
+  maxPrice?: number | null;
 }
 
 export interface ProductsListParams {
@@ -272,6 +305,14 @@ export interface CustomersListResponse {
     total: number;
     totalPages: number;
   };
+  /** מוחזר מ־GET /mobile/customers (גם עם limit=1) */
+  stats?: {
+    total: number;
+    withOrders?: number;
+    returning?: number;
+    withCredit?: number;
+    acceptsMarketing?: number;
+  };
 }
 
 // ============ Analytics Types ============
@@ -323,6 +364,7 @@ export interface DashboardSummary {
     revenue: number;
     orders: number;
   }>;
+  waitingForShipment?: number;
 }
 
 // ============ Notification Types ============
@@ -352,12 +394,19 @@ export type DiscountType =
   | 'fixed_amount'
   | 'free_shipping'
   | 'buy_x_pay_y'
-  | 'buy_x_get_y';
+  | 'buy_x_get_y'
+  | 'gift_product'
+  | 'quantity_discount'
+  | 'spend_x_pay_y';
+
+export type DiscountAppliesTo = 'all' | 'category' | 'product' | 'member';
 
 export interface Coupon {
   id: string;
-  code: string;
+  discountKind?: 'coupon' | 'automatic';
+  code: string | null;
   title: string | null;
+  name?: string;
   type: DiscountType;
   value: number;
   usageCount: number;
@@ -365,6 +414,27 @@ export interface Coupon {
   isActive: boolean;
   startsAt: string | null;
   endsAt: string | null;
+  appliesTo?: DiscountAppliesTo;
+  categoryIds?: string[];
+  productIds?: string[];
+  excludeCategoryIds?: string[];
+  excludeProductIds?: string[];
+  minimumAmount?: number | null;
+  minimumQuantity?: number | null;
+  oncePerCustomer?: boolean;
+  firstOrderOnly?: boolean;
+  stackable?: boolean;
+  priority?: number;
+  // Advanced type fields
+  buyQuantity?: number | null;
+  payAmount?: number | null;
+  getQuantity?: number | null;
+  getDiscountPercent?: number | null;
+  giftSameProduct?: boolean;
+  giftProductIds?: string[];
+  quantityTiers?: Array<{ quantity: number; discount: number; type: string }>;
+  spendAmount?: number | null;
+  description?: string | null;
 }
 
 // ============ API Response Types ============

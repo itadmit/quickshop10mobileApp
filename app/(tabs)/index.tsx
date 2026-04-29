@@ -1,50 +1,137 @@
-import React from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { Ionicons } from '@expo/vector-icons';
-import Svg, { Path } from 'react-native-svg';
 import {
   View,
   ScrollView,
   StyleSheet,
   RefreshControl,
   TouchableOpacity,
+  Dimensions,
+  Platform,
+  UIManager,
+  LayoutAnimation,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useDashboardSummary } from '@/hooks';
-import { useAuthStore } from '@/stores';
+import { format } from 'date-fns';
+import { he } from 'date-fns/locale';
+import { Image } from 'expo-image';
+import { useDashboardSummary, useFullAnalytics, useOrdersStats, useProducts, useCustomers } from '@/hooks';
+import { useAuthStore, useAppStore } from '@/stores';
 import {
   Text,
-  Subtitle,
-  Card,
-  OrderStatusBadge,
-  LoadingScreen,
-  colors,
-  spacing,
-  borderRadius,
-  shadows,
+  SectionHeader,
+  StatCard,
+  DashboardSkeleton,
+  fonts,
+  designTokens,
 } from '@/components/ui';
-import { formatCurrency, formatRelativeDate } from '@/lib/utils/format';
+import { formatCurrency, formatDateTimeShort } from '@/lib/utils/format';
+import type { OrderStatus } from '@/types';
+
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
+
+type PeriodKey = 'today' | 'week' | 'month' | 'year';
+
+const PERIOD_OPTIONS: { key: PeriodKey; label: string }[] = [
+  { key: 'today', label: 'היום' },
+  { key: 'week', label: 'השבוע' },
+  { key: 'month', label: 'החודש' },
+  { key: 'year', label: 'השנה' },
+];
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
+
+const dt = designTokens;
 
 export default function DashboardScreen() {
   const router = useRouter();
   const currentStore = useAuthStore((s) => s.currentStore);
+  const refreshCurrentStore = useAuthStore((s) => s.refreshCurrentStore);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  useEffect(() => {
+    refreshCurrentStore();
+  }, [refreshCurrentStore]);
+
+  const [selectedPeriod, setSelectedPeriod] = useState<PeriodKey>('today');
+
   const {
     data: summary,
-    isLoading,
-    refetch,
-    isRefetching,
-  } = useDashboardSummary('today');
+    isLoading: summaryLoading,
+    isError: summaryError,
+    refetch: refetchSummary,
+  } = useDashboardSummary(selectedPeriod);
 
-  if (isLoading) {
-    return <LoadingScreen message="טוען נתונים..." />;
-  }
+  const {
+    data: analytics,
+    refetch: refetchAnalytics,
+  } = useFullAnalytics({ period: selectedPeriod });
 
-  const getGreeting = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return 'בוקר טוב';
-    if (hour < 18) return 'צהריים טובים';
-    return 'ערב טוב';
-  };
+  const { data: ordersStats, refetch: refetchOrdersStats } = useOrdersStats();
+  const { data: productsData, refetch: refetchProducts } = useProducts({ limit: 1 });
+  const { data: customersData, refetch: refetchCustomers } = useCustomers({ limit: 1 });
+
+  const handleRefresh = useCallback(async () => {
+    setIsRefreshing(true);
+    try {
+      await Promise.all([
+        refetchSummary(),
+        refetchAnalytics(),
+        refetchOrdersStats(),
+        refetchProducts(),
+        refetchCustomers(),
+        refreshCurrentStore(),
+      ]);
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [refetchSummary, refetchAnalytics, refetchOrdersStats, refetchProducts, refetchCustomers, refreshCurrentStore]);
+
+  const handlePeriodSelect = useCallback((period: PeriodKey) => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setSelectedPeriod(period);
+  }, []);
+
+  const showSkeleton = summaryLoading && !summary && !summaryError;
+
+  const analyticsData = analytics?.summary;
+
+  const pendingCount = summary?.orders?.pending || 0;
+  const lowStockCount = summary?.products?.lowStock || 0;
+
+  const statsTodayRevenue = ordersStats?.today?.revenue;
+  const apiRevenue = analyticsData?.revenue ?? summary?.revenue?.total ?? 0;
+
+  const totalRevenue =
+    selectedPeriod === 'today' &&
+    typeof statsTodayRevenue === 'number' &&
+    statsTodayRevenue > 0
+      ? statsTodayRevenue
+      : apiRevenue;
+  const revenueChange = analyticsData?.revenueChange ?? summary?.revenue?.change;
+
+  const totalOrdersFromStats = (ordersStats?.today?.orders ?? 0) + (ordersStats?.pending ?? 0) + (ordersStats?.processing ?? 0);
+  const ordersCount =
+    summary?.orders?.total ??
+    summary?.revenue?.orders ??
+    analyticsData?.orders ??
+    totalOrdersFromStats ??
+    0;
+  const productsCount = productsData?.stats?.active ?? summary?.products?.active ?? 0;
+  const customersCount = customersData?.stats?.total ?? summary?.customers?.total ?? 0;
+  const avgOrderValue = ordersCount > 0 ? totalRevenue / ordersCount : 0;
+
+  const todayFormatted = format(new Date(), "EEEE, d MMMM yyyy", { locale: he });
+
+  const outOfStockCount = summary?.products?.outOfStock || 0;
+  const waitingForShipmentCount = summary?.waitingForShipment || 0;
+  const hasAlerts = pendingCount > 0 || lowStockCount > 0 || outOfStockCount > 0 || waitingForShipmentCount > 0;
+  const topProducts = summary?.topProducts || [];
+  const revenueChart = summary?.revenueChart || [];
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -53,313 +140,362 @@ export default function DashboardScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={isRefetching} onRefresh={refetch} />
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={handleRefresh}
+            tintColor={dt.colors.brand[500]}
+            colors={[dt.colors.brand[500]]}
+
+          />
         }
       >
         {/* Header */}
         <View style={styles.header}>
-          <View style={styles.headerContent}>
-            <View style={styles.profileSection}>
-              <View style={styles.avatarContainer}>
-                <View style={styles.avatar}>
-                  <Text style={styles.avatarText}>
-                    {currentStore?.name?.charAt(0).toUpperCase() || 'S'}
-                  </Text>
-                </View>
-                <View style={styles.onlineDot} />
-              </View>
-              <View style={styles.greetingText}>
-                <Text style={styles.greetingLabel}>{getGreeting()},</Text>
-                <Text style={styles.userName}>{currentStore?.name || 'החנות שלי'}</Text>
-              </View>
-            </View>
-            <TouchableOpacity style={styles.notificationButton}>
-              <Ionicons name="notifications-outline" size={22} color={colors.gray600} />
-              <View style={styles.notificationBadge} />
-            </TouchableOpacity>
+          <View style={styles.headerInfo}>
+            <Text style={styles.storeName}>{currentStore?.name || 'החנות שלי'}</Text>
+            <Text style={styles.dateText}>{todayFormatted}</Text>
           </View>
-        </View>
-
-        {/* Time Filters */}
-        <View style={styles.filtersContainer}>
-          <ScrollView 
-            horizontal 
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.filtersScroll}
-            style={{ direction: 'rtl' }}
+          <TouchableOpacity
+            style={styles.settingsButton}
+            onPress={() => router.push('/(tabs)/more')}
+            activeOpacity={0.7}
           >
-            <FilterButton label="היום" active />
-            <FilterButton label="אתמול" />
-            <FilterButton label="השבוע" />
-            <FilterButton label="החודש" />
-          </ScrollView>
+            <Ionicons name="settings-outline" size={22} color={dt.colors.ink[600]} />
+          </TouchableOpacity>
         </View>
 
-        {/* Overview Section */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <View style={styles.sectionTitleContainer}>
-              <Subtitle style={styles.sectionTitle}>סקירה כללית</Subtitle>
-            </View>
-            <TouchableOpacity>
-              <Text style={styles.fullReportLink}>
-                דוח מלא <Ionicons name="chevron-back" size={12} />
-              </Text>
-            </TouchableOpacity>
-          </View>
-          
-          <ScrollView 
-            horizontal 
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.statsScroll}
-            snapToInterval={280}
-            snapToAlignment="start"
-            decelerationRate="fast"
-            style={{ direction: 'rtl' }}
-          >
-            <StatCard
-              label="סה״כ מכירות"
-              value={formatCurrency(summary?.revenue?.total || 0)}
-              change={summary?.revenue?.change}
-              icon="cash-outline"
-              iconColor="#00785C"
-              iconBg="#E4F8F0"
-              accentColor="#00785C"
-            />
-            <StatCard
-              label="הזמנות"
-              value={String(summary?.revenue?.orders || 0)}
-              change={summary?.orders?.change}
-              icon="bag-outline"
-              iconColor="#0066CC"
-              iconBg="#E6F2FF"
-              accentColor="#0066CC"
-            />
-            <StatCard
-              label="מבקרים"
-              value="340"
-              change={-2}
-              icon="people-outline"
-              iconColor="#8B5CF6"
-              iconBg="#F3F0FF"
-              accentColor="#8B5CF6"
-            />
-          </ScrollView>
-        </View>
-
-        {/* Action Required */}
-        {(summary?.orders?.pending || summary?.products?.lowStock || summary?.products?.outOfStock) ? (
-          <View style={styles.section}>
-            <Card style={styles.alertCard} padding={4}>
-              <View style={styles.alertContent}>
-                <View style={styles.alertIconContainer}>
-                  <Ionicons name="warning" size={24} color="#F59E0B" />
-                </View>
-                <View style={styles.alertTextContainer}>
-                  <Text weight="bold" style={styles.alertTitle}>דורש טיפול</Text>
-                  <Text style={styles.alertDescription}>
-                    {summary?.products?.lowStock || 0} מוצרים במלאי נמוך • {summary?.orders?.pending || 0} הזמנות להכנה
-                  </Text>
-                </View>
-                <TouchableOpacity 
-                  style={styles.alertButton}
-                  onPress={() => router.push('/(tabs)/orders?status=pending')}
+        {showSkeleton ? (
+          <DashboardSkeleton />
+        ) : (
+        <>
+        {/* Revenue Hero */}
+        <View style={styles.revenueHero}>
+          <Text style={styles.revenueValue}>
+            {formatCurrency(totalRevenue)}
+          </Text>
+          <View style={styles.revenueLabelRow}>
+            <Text style={styles.revenueLabel}>הכנסות {PERIOD_OPTIONS.find(p => p.key === selectedPeriod)?.label}</Text>
+            {revenueChange !== undefined && (
+              <View
+                style={[
+                  styles.trendContainer,
+                  {
+                    backgroundColor: revenueChange >= 0
+                      ? dt.colors.semantic.success.light
+                      : dt.colors.semantic.danger.light,
+                  },
+                ]}
+              >
+                <Ionicons
+                  name={revenueChange >= 0 ? 'arrow-up' : 'arrow-down'}
+                  size={12}
+                  color={revenueChange >= 0 ? dt.colors.semantic.success.DEFAULT : dt.colors.semantic.danger.DEFAULT}
+                />
+                <Text
+                  style={[
+                    styles.trendText,
+                    {
+                      color: revenueChange >= 0
+                        ? dt.colors.semantic.success.DEFAULT
+                        : dt.colors.semantic.danger.DEFAULT,
+                    },
+                  ]}
                 >
-                  <Text style={styles.alertButtonText}>טפל כעת</Text>
-                </TouchableOpacity>
+                  {Math.abs(revenueChange)}%
+                </Text>
               </View>
-            </Card>
+            )}
           </View>
-        ) : null}
+
+          {/* Period Pills */}
+          <View style={styles.periodRow}>
+            {PERIOD_OPTIONS.map((option) => {
+              const isActive = selectedPeriod === option.key;
+              return (
+                <TouchableOpacity
+                  key={option.key}
+                  style={[
+                    styles.periodPill,
+                    isActive ? styles.periodPillActive : styles.periodPillInactive,
+                  ]}
+                  onPress={() => handlePeriodSelect(option.key)}
+                  activeOpacity={0.7}
+                >
+                  <Text
+                    style={[
+                      styles.periodPillText,
+                      isActive ? styles.periodPillTextActive : styles.periodPillTextInactive,
+                    ]}
+                  >
+                    {option.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
+
+        {/* Stats Row */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.statsRow}
+          style={styles.statsScrollView}
+        >
+          <StatCard
+            label="הזמנות"
+            value={String(ordersCount)}
+            icon={<Ionicons name="cart-outline" size={18} color={dt.colors.brand[500]} />}
+            accentColor={dt.colors.brand[500]}
+            onPress={() => router.push('/(tabs)/orders')}
+          />
+          <StatCard
+            label="ממוצע להזמנה"
+            value={formatCurrency(avgOrderValue)}
+            icon={<Ionicons name="analytics-outline" size={18} color={dt.colors.accent[500]} />}
+            accentColor={dt.colors.accent[500]}
+          />
+          <StatCard
+            label="מוצרים פעילים"
+            value={String(productsCount)}
+            icon={<Ionicons name="cube-outline" size={18} color={dt.colors.semantic.success.DEFAULT} />}
+            accentColor={dt.colors.semantic.success.DEFAULT}
+            onPress={() => router.push('/(tabs)/products')}
+          />
+          <StatCard
+            label="לקוחות"
+            value={String(customersCount)}
+            icon={<Ionicons name="people-outline" size={18} color={dt.colors.semantic.info.DEFAULT} />}
+            accentColor={dt.colors.semantic.info.DEFAULT}
+            onPress={() => router.push('/(tabs)/customers')}
+          />
+          {pendingCount > 0 && (
+            <StatCard
+              label="ממתינות לתשלום"
+              value={String(pendingCount)}
+              icon={<Ionicons name="time-outline" size={18} color={dt.colors.semantic.warning.DEFAULT} />}
+              accentColor={dt.colors.semantic.warning.DEFAULT}
+              onPress={() => router.push('/(tabs)/orders?status=pendingPayment')}
+            />
+          )}
+          {lowStockCount > 0 && (
+            <StatCard
+              label="מלאי נמוך"
+              value={String(lowStockCount)}
+              icon={<Ionicons name="alert-circle-outline" size={18} color={dt.colors.semantic.danger.DEFAULT} />}
+              accentColor={dt.colors.semantic.danger.DEFAULT}
+              onPress={() => router.push('/(tabs)/products')}
+            />
+          )}
+        </ScrollView>
+
+        {/* Sales Chart */}
+        {revenueChart.length > 0 && (
+          <View style={styles.section}>
+            <SectionHeader title="מכירות - החודש" />
+            <SalesChart data={revenueChart} />
+          </View>
+        )}
 
         {/* Quick Actions */}
         <View style={styles.section}>
-          <View style={styles.sectionTitleContainer}>
-            <Subtitle style={styles.sectionTitle}>פעולות מהירות</Subtitle>
-          </View>
-          <View style={styles.quickActionsGrid}>
-            <QuickActionButton
+          <SectionHeader title="פעולות מהירות" />
+          <View style={styles.actionsGrid}>
+            <QuickAction
               icon="add-circle-outline"
               label="הוסף מוצר"
-              onPress={() => router.push('/(tabs)/products')}
+              onPress={() => router.push('/(tabs)/products/create')}
+              color={dt.colors.brand[500]}
               primary
             />
-            <QuickActionButton
-              icon="document-text-outline"
-              label="צור הזמנה"
+            <QuickAction
+              icon="receipt-outline"
+              label="הזמנה חדשה"
               onPress={() => router.push('/(tabs)/orders')}
-              primary
+              color={dt.colors.brand[400]}
             />
-            <QuickActionButton
-              icon="pricetag-outline"
-              label="הנחות"
-              onPress={() => router.push('/(tabs)/more')}
+            <QuickAction
+              icon="person-add-outline"
+              label="הוסף לקוח"
+              onPress={() => router.push('/(tabs)/customers/create')}
+              color={dt.colors.brand[300]}
             />
-            <QuickActionButton
-              icon="color-palette-outline"
-              label="עיצוב חנות"
+            <QuickAction
+              icon="ellipsis-horizontal-outline"
+              label="כל הפעולות"
               onPress={() => router.push('/(tabs)/more')}
+              color={dt.colors.ink[600]}
             />
           </View>
         </View>
 
-        {/* Recent Activity */}
-        <View style={styles.section}>
-          <View style={styles.sectionTitleContainer}>
-            <Subtitle style={styles.sectionTitle}>פעילות אחרונה</Subtitle>
+        {/* Needs Attention */}
+        {hasAlerts && (
+          <View style={styles.section}>
+            <SectionHeader title="דורש תשומת לב" />
+            <View style={styles.alertsContainer}>
+              {pendingCount > 0 && (
+                <TouchableOpacity
+                  style={styles.alertCard}
+                  onPress={() => router.push('/(tabs)/orders?status=pendingPayment')}
+                  activeOpacity={0.7}
+                >
+                  <View style={[styles.alertDot, { backgroundColor: dt.colors.semantic.warning.DEFAULT }]} />
+                  <View style={styles.alertContent}>
+                    <Text style={styles.alertLabel}>ממתינות לתשלום</Text>
+                    <Text style={styles.alertCount}>{pendingCount}</Text>
+                  </View>
+                  <Ionicons name="chevron-back" size={16} color={dt.colors.ink[300]} />
+                </TouchableOpacity>
+              )}
+              {waitingForShipmentCount > 0 && (
+                <TouchableOpacity
+                  style={styles.alertCard}
+                  onPress={() => router.push('/(tabs)/orders?status=awaitingShipment')}
+                  activeOpacity={0.7}
+                >
+                  <View style={[styles.alertDot, { backgroundColor: dt.colors.semantic.info.DEFAULT }]} />
+                  <View style={styles.alertContent}>
+                    <Text style={styles.alertLabel}>ממתינות למשלוח</Text>
+                    <Text style={styles.alertCount}>{waitingForShipmentCount}</Text>
+                  </View>
+                  <Ionicons name="chevron-back" size={16} color={dt.colors.ink[300]} />
+                </TouchableOpacity>
+              )}
+              {outOfStockCount > 0 && (
+                <TouchableOpacity
+                  style={styles.alertCard}
+                  onPress={() => router.push('/(tabs)/products')}
+                  activeOpacity={0.7}
+                >
+                  <View style={[styles.alertDot, { backgroundColor: dt.colors.semantic.danger.DEFAULT }]} />
+                  <View style={styles.alertContent}>
+                    <Text style={styles.alertLabel}>מוצרים שאזלו</Text>
+                    <Text style={styles.alertCount}>{outOfStockCount}</Text>
+                  </View>
+                  <Ionicons name="chevron-back" size={16} color={dt.colors.ink[300]} />
+                </TouchableOpacity>
+              )}
+              {lowStockCount > 0 && (
+                <TouchableOpacity
+                  style={styles.alertCard}
+                  onPress={() => router.push('/(tabs)/products')}
+                  activeOpacity={0.7}
+                >
+                  <View style={[styles.alertDot, { backgroundColor: dt.colors.semantic.warning.DEFAULT }]} />
+                  <View style={styles.alertContent}>
+                    <Text style={styles.alertLabel}>מוצרים במלאי נמוך</Text>
+                    <Text style={styles.alertCount}>{lowStockCount}</Text>
+                  </View>
+                  <Ionicons name="chevron-back" size={16} color={dt.colors.ink[300]} />
+                </TouchableOpacity>
+              )}
+            </View>
           </View>
+        )}
+
+        {/* Top Products */}
+        {topProducts.length > 0 && (
+          <View style={styles.section}>
+            <SectionHeader
+              title="מוצרים מובילים"
+              onShowAll={() => router.push('/(tabs)/products')}
+            />
+            <View style={styles.topProductsCard}>
+              {topProducts.slice(0, 5).map((product, index) => (
+                <TopProductRow
+                  key={product.id || index}
+                  product={product}
+                  rank={index + 1}
+                  isLast={index === Math.min(topProducts.length - 1, 4)}
+                  onPress={() => product.id ? router.push(`/(tabs)/products/${product.id}`) : undefined}
+                />
+              ))}
+            </View>
+          </View>
+        )}
+
+        {/* Recent Orders */}
+        <View style={styles.section}>
+          <SectionHeader
+            title="הזמנות אחרונות"
+            onShowAll={() => router.push('/(tabs)/orders')}
+          />
           {summary?.recentOrders && summary.recentOrders.length > 0 ? (
-            <View style={styles.activityList}>
-              {summary.recentOrders.slice(0, 5).map((order) => (
-                <ActivityItem
+            <View style={styles.ordersCard}>
+              {summary.recentOrders.slice(0, 5).map((order, index) => (
+                <RecentOrderRow
                   key={order.id}
                   order={order}
+                  isLast={index === Math.min(summary.recentOrders.length - 1, 4)}
                   onPress={() => router.push(`/(tabs)/orders/${order.id}`)}
                 />
               ))}
             </View>
           ) : (
-            <Card style={styles.emptyCard} padding={6}>
-              <Text color="secondary" center>
-                אין פעילות אחרונה
-              </Text>
-            </Card>
+            <View style={styles.emptyCard}>
+              <Ionicons name="receipt-outline" size={36} color={dt.colors.ink[300]} />
+              <Text style={styles.emptyTitle}>אין הזמנות עדיין</Text>
+              <Text style={styles.emptySubtitle}>הזמנות חדשות יופיעו כאן</Text>
+            </View>
           )}
         </View>
 
-        <View style={{ height: spacing[10] }} />
+        <View style={{ height: 40 }} />
+        </>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-// Filter Button
-function FilterButton({ label, active = false }: { label: string; active?: boolean }) {
-  return (
-    <TouchableOpacity 
-      style={[styles.filterButton, active && styles.filterButtonActive]}
-    >
-      <Text style={[styles.filterButtonText, active && styles.filterButtonTextActive]}>
-        {label}
-      </Text>
-    </TouchableOpacity>
-  );
-}
+// --- Sub-components ---
 
-// Decorative Wave Background
-function WaveBackground({ color }: { color: string }) {
-  return (
-    <View style={styles.waveContainer}>
-      <Svg
-        width="100%"
-        height="100%"
-        viewBox="0 0 260 140"
-        preserveAspectRatio="none"
-        style={styles.waveSvg}
-      >
-        <Path
-          d="M0,40 C60,20 100,60 160,40 C220,20 260,40 260,40 L260,140 L0,140 Z"
-          fill={color}
-          opacity="0.1"
-        />
-      </Svg>
-    </View>
-  );
-}
-
-// Stat Card
-function StatCard({
-  label,
-  value,
-  change,
-  icon,
-  iconColor,
-  iconBg,
-  accentColor,
-}: {
-  label: string;
-  value: string;
-  change?: number;
-  icon: keyof typeof Ionicons.glyphMap;
-  iconColor: string;
-  iconBg: string;
-  accentColor: string;
-}) {
-  return (
-    <Card style={styles.statCard} padding={5}>
-      {/* Decorative Wave Background */}
-      <WaveBackground color={accentColor} />
-      
-      <View style={styles.statCardHeader}>
-        <View style={styles.statCardText}>
-          <Text style={styles.statCardLabel}>{label}</Text>
-          <Text style={styles.statCardValue}>{value}</Text>
-        </View>
-        <View style={[styles.statIconContainer, { backgroundColor: iconBg }]}>
-          <Ionicons name={icon} size={20} color={iconColor} />
-        </View>
-      </View>
-      {change !== undefined && (
-        <View style={styles.statChangeContainer}>
-          <View style={[
-            styles.changeBadge,
-            change >= 0 ? styles.changeBadgePositive : styles.changeBadgeNegative
-          ]}>
-            <Ionicons 
-              name={change >= 0 ? 'trending-up' : 'trending-down'} 
-              size={12} 
-              color={change >= 0 ? '#059669' : '#DC2626'} 
-            />
-            <Text style={[
-              styles.changeText,
-              change >= 0 ? styles.changeTextPositive : styles.changeTextNegative
-            ]}>
-              {Math.abs(change)}%
-            </Text>
-          </View>
-          <Text style={styles.changeLabel}>בהשוואה לאתמול</Text>
-        </View>
-      )}
-    </Card>
-  );
-}
-
-// Quick Action Button
-function QuickActionButton({
+function QuickAction({
   icon,
   label,
   onPress,
+  color,
   primary = false,
 }: {
   icon: keyof typeof Ionicons.glyphMap;
   label: string;
   onPress: () => void;
+  color: string;
   primary?: boolean;
 }) {
   return (
-    <TouchableOpacity 
-      style={styles.quickActionButton}
-      onPress={onPress}
-      activeOpacity={0.7}
-    >
-      <View style={[
-        styles.quickActionIcon,
-        primary ? styles.quickActionIconPrimary : styles.quickActionIconSecondary
-      ]}>
-        <Ionicons 
-          name={icon} 
-          size={20} 
-          color={primary ? '#00785C' : colors.gray600} 
-        />
+    <TouchableOpacity style={styles.quickAction} onPress={onPress} activeOpacity={0.7}>
+      <View
+        style={[
+          styles.quickActionInner,
+          primary && styles.quickActionInnerPrimary,
+        ]}
+      >
+        <Text
+          style={[
+            styles.quickActionLabel,
+            primary && styles.quickActionLabelPrimary,
+          ]}
+        >
+          {label}
+        </Text>
+        <View
+          style={[
+            styles.quickActionIcon,
+            { backgroundColor: primary ? 'rgba(255,255,255,0.2)' : `${color}18` },
+          ]}
+        >
+          <Ionicons name={icon} size={22} color={primary ? '#FFFFFF' : color} />
+        </View>
       </View>
-      <Text style={styles.quickActionLabel}>{label}</Text>
     </TouchableOpacity>
   );
 }
 
-// Activity Item
-function ActivityItem({
+function RecentOrderRow({
   order,
+  isLast,
   onPress,
 }: {
   order: {
@@ -367,57 +503,34 @@ function ActivityItem({
     orderNumber: string;
     customerName: string;
     total: number;
-    status: string;
+    status: OrderStatus;
     createdAt: string;
   };
+  isLast: boolean;
   onPress: () => void;
 }) {
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'pending': return { bg: '#FEF3C7', text: '#92400E', border: '#FDE68A' };
-      case 'confirmed': return { bg: '#D1FAE5', text: '#065F46', border: '#A7F3D0' };
-      case 'delivered': return { bg: '#D1FAE5', text: '#065F46', border: '#A7F3D0' };
-      default: return { bg: '#F3F4F6', text: '#374151', border: '#E5E7EB' };
-    }
-  };
-
-  const statusColors = getStatusColor(order.status);
-  const statusLabels: Record<string, string> = {
-    pending: 'ממתינה',
-    confirmed: 'אושרה',
-    processing: 'בטיפול',
-    shipped: 'נשלחה',
-    delivered: 'הושלם',
-    cancelled: 'בוטלה',
-  };
-
   return (
-    <TouchableOpacity 
-      style={styles.activityItem}
+    <TouchableOpacity
+      style={[styles.orderRow, !isLast && styles.orderRowBorder]}
       onPress={onPress}
       activeOpacity={0.7}
     >
-      <View style={styles.activityIcon}>
-        <Ionicons name="bag-outline" size={20} color={colors.gray500} />
+      <View style={styles.orderTopRow}>
+        <Text style={styles.orderNumber}>
+          {order.orderNumber.startsWith('#') ? order.orderNumber : `#${order.orderNumber}`}
+        </Text>
+        <View style={styles.orderAmountRow}>
+          <Text style={styles.orderTotal}>{formatCurrency(order.total)}</Text>
+          <Ionicons name="chevron-back" size={14} color={dt.colors.ink[300]} />
+        </View>
       </View>
-      <View style={styles.activityContent}>
-        <Text weight="semiBold" style={[styles.activityTitle, { textAlign: 'right' }]}>
-          הזמנה #{order.orderNumber}
+      <View style={styles.orderBottomRow}>
+        <Text style={styles.orderMeta}>
+          {order.customerName} {'\u00B7'} {formatDateTimeShort(order.createdAt)}
         </Text>
-        <Text style={[styles.activitySubtitle, { textAlign: 'right' }]}>
-          {order.customerName} • {formatRelativeDate(order.createdAt)}
-        </Text>
-      </View>
-      <View style={styles.activityRight}>
-        <Text weight="bold" style={styles.activityAmount}>
-          {formatCurrency(order.total)}
-        </Text>
-        <View style={[
-          styles.activityStatusBadge,
-          { backgroundColor: statusColors.bg, borderColor: statusColors.border }
-        ]}>
-          <Text style={[styles.activityStatusText, { color: statusColors.text }]}>
-            {statusLabels[order.status] || order.status}
+        <View style={[styles.orderMiniBadge, { backgroundColor: dt.colors.orderStatus[order.status]?.bg || dt.colors.ink[100] }]}>
+          <Text style={[styles.orderMiniBadgeText, { color: dt.colors.orderStatus[order.status]?.text || dt.colors.ink[600] }]}>
+            {order.status === 'pending' ? 'ממתינה' : order.status === 'confirmed' ? 'אושרה' : order.status === 'processing' ? 'בטיפול' : order.status === 'shipped' ? 'נשלחה' : order.status === 'delivered' ? 'נמסרה' : order.status === 'cancelled' ? 'בוטלה' : 'זוכתה'}
           </Text>
         </View>
       </View>
@@ -425,420 +538,539 @@ function ActivityItem({
   );
 }
 
+function SalesChart({ data }: { data: Array<{ date: string; revenue: number; orders: number }> }) {
+  const maxRevenue = useMemo(() => Math.max(...data.map(d => d.revenue), 1), [data]);
+  const totalRevenue = useMemo(() => data.reduce((sum, d) => sum + d.revenue, 0), [data]);
+  const totalOrders = useMemo(() => data.reduce((sum, d) => sum + d.orders, 0), [data]);
+  const barHeight = 100;
+
+  const labelIndices = useMemo(() => {
+    if (data.length <= 7) return data.map((_, i) => i);
+    return [0, Math.floor(data.length / 3), Math.floor(2 * data.length / 3), data.length - 1];
+  }, [data]);
+
+  return (
+    <View style={styles.chartCard}>
+      <View style={styles.chartBarsContainer}>
+        {data.map((d, i) => {
+          const pct = maxRevenue > 0 ? (d.revenue / maxRevenue) : 0;
+          const h = Math.max(pct * barHeight, d.revenue > 0 ? 4 : 1);
+          const isLabel = labelIndices.includes(i);
+          const dateObj = new Date(d.date);
+          return (
+            <View key={d.date} style={styles.chartBarCol}>
+              <View style={styles.chartBarArea}>
+                <View
+                  style={[
+                    styles.chartBar,
+                    {
+                      height: h,
+                      backgroundColor: d.revenue > 0 ? dt.colors.brand[500] : dt.colors.ink[100],
+                      opacity: d.revenue > 0 ? (0.4 + pct * 0.6) : 0.5,
+                    },
+                  ]}
+                />
+              </View>
+              {isLabel && (
+                <Text style={styles.chartBarLabel}>
+                  {`${dateObj.getDate()}/${dateObj.getMonth() + 1}`}
+                </Text>
+              )}
+            </View>
+          );
+        })}
+      </View>
+
+      <View style={styles.chartSummary}>
+        <View style={styles.chartSummaryItem}>
+          <Text style={styles.chartSummaryValue}>{formatCurrency(totalRevenue)}</Text>
+          <Text style={styles.chartSummaryLabel}>סה"כ מכירות</Text>
+        </View>
+        <View style={styles.chartSummaryItem}>
+          <Text style={styles.chartSummaryValue}>{totalOrders}</Text>
+          <Text style={styles.chartSummaryLabel}>הזמנות</Text>
+        </View>
+      </View>
+    </View>
+  );
+}
+
+function TopProductRow({
+  product,
+  rank,
+  isLast,
+  onPress,
+}: {
+  product: { id: string; name: string; revenue: number; quantity: number; imageUrl?: string | null };
+  rank: number;
+  isLast: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <TouchableOpacity
+      style={[styles.topProductRow, !isLast && styles.topProductRowBorder]}
+      onPress={onPress}
+      activeOpacity={0.7}
+    >
+      <View style={styles.topProductInfo}>
+        {product.imageUrl ? (
+          <Image
+            source={{ uri: product.imageUrl }}
+            style={styles.topProductImage}
+            contentFit="cover"
+            transition={200}
+          />
+        ) : (
+          <View style={[styles.topProductImage, styles.topProductImagePlaceholder]}>
+            <Ionicons name="cube-outline" size={18} color={dt.colors.ink[300]} />
+          </View>
+        )}
+        <View style={styles.topProductDetails}>
+          <Text style={styles.topProductName} numberOfLines={1}>{product.name}</Text>
+          <Text style={styles.topProductQuantity}>{product.quantity} נמכרו</Text>
+        </View>
+      </View>
+      <View style={styles.topProductRevenueCol}>
+        <Text style={styles.topProductRevenue}>{formatCurrency(product.revenue)}</Text>
+        <Ionicons name="chevron-back" size={14} color={dt.colors.ink[300]} />
+      </View>
+    </TouchableOpacity>
+  );
+}
+
+// --- Styles ---
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.white, // לבן מעל ההדר
+    backgroundColor: dt.colors.surface.background,
   },
   scrollView: {
     flex: 1,
-    backgroundColor: '#F6F6F7', // רקע אפור מתחת להדר
   },
   scrollContent: {
-    paddingBottom: spacing[10],
-    backgroundColor: '#F6F6F7',
+    paddingBottom: 40,
   },
-  header: {
-    backgroundColor: colors.white,
-    paddingTop: spacing[3],
-    paddingBottom: spacing[3],
-    paddingHorizontal: spacing[4],
-    borderBottomWidth: 1,
-    borderBottomColor: '#E1E3E5',
-    marginTop: spacing[0],
-  },
-  headerContent: {
-    flexDirection: 'row', // ב-RTL, row = ימין לשמאל
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  profileSection: {
-    flexDirection: 'row', // ב-RTL, row = ימין לשמאל (פרופיל מימין, טקסט משמאל)
-    alignItems: 'center',
-    gap: spacing[3],
-  },
-  avatarContainer: {
-    position: 'relative',
-  },
-  avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: '#E1E3E5',
-  },
-  avatarText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: colors.white,
-  },
-  onlineDot: {
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: '#00785C',
-    borderWidth: 2,
-    borderColor: colors.white,
-  },
-  greetingText: {
-    alignItems: 'flex-start',
-  },
-  greetingLabel: {
-    fontSize: 12,
-    color: '#6D7175',
-    fontFamily: 'Assistant_500Medium',
-    textAlign: 'right',
-  },
-  userName: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#202223',
-    marginTop: 2,
-    textAlign: 'right',
-  },
-  notificationButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#F6F6F7',
-    alignItems: 'center',
-    justifyContent: 'center',
-    position: 'relative',
-  },
-  notificationBadge: {
-    position: 'absolute',
-    top: 10,
-    right: 10,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#EF4444',
-    borderWidth: 1,
-    borderColor: colors.white,
-  },
-  filtersContainer: {
-    marginTop: spacing[4],
-    marginBottom: spacing[2],
-  },
-  filtersScroll: {
-    paddingHorizontal: spacing[4],
-    gap: spacing[2],
-  },
-  filterButton: {
-    height: 32,
-    paddingHorizontal: spacing[4],
-    borderRadius: borderRadius.full,
-    backgroundColor: colors.white,
-    borderWidth: 1,
-    borderColor: '#E1E3E5',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  filterButtonActive: {
-    backgroundColor: '#00785C',
-    borderColor: '#00785C',
-  },
-  filterButtonText: {
-    fontSize: 14,
-    fontFamily: 'Assistant_500Medium',
-    color: '#6D7175',
-    textAlign: 'center',
-  },
-  filterButtonTextActive: {
-    color: colors.white,
-    textAlign: 'center',
-  },
-  section: {
-    marginTop: spacing[8],
-    paddingHorizontal: spacing[4],
-  },
-  sectionHeader: {
-    flexDirection: 'row', // ב-RTL, row = ימין לשמאל
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing[3],
-  },
-  sectionTitleContainer: {
-    alignItems: 'flex-start',
 
-    marginBottom: spacing[3],
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#202223',
-    letterSpacing: -0.2,
-    textAlign: 'right',
-  },
-  fullReportLink: {
-    fontSize: 12,
-    color: '#00785C',
-    fontFamily: 'Assistant_500Medium',
-    flexDirection: 'row-reverse',
-    alignItems: 'center',
-  },
-  statsScroll: {
-    gap: spacing[4],
-    paddingRight: spacing[4],
-  },
-  statCard: {
-    width: 260,
-    borderRadius: borderRadius.xl,
-    borderWidth: 1,
-    borderColor: '#E1E3E5',
-    backgroundColor: colors.white,
-    ...shadows.base,
-    overflow: 'hidden',
-    position: 'relative',
-  },
-  waveContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 50,
-    zIndex: 0,
-  },
-  waveSvg: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-  },
-  statCardHeader: {
-    flexDirection: 'row', // ב-RTL, row = ימין לשמאל (טקסט מימין, אייקון משמאל)
+  // Header
+  header: {
+    flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: spacing[2],
-    zIndex: 1,
-    position: 'relative',
+    alignItems: 'center',
+    paddingHorizontal: dt.spacing[4],
+    paddingTop: dt.spacing[2],
+    paddingBottom: dt.spacing[3],
+    backgroundColor: dt.colors.surface.card,
   },
-  statCardText: {
+  headerInfo: {
+    alignItems: 'flex-start',
     flex: 1,
-    alignItems: 'flex-start',
   },
-  statCardLabel: {
-    fontSize: 14,
-    fontFamily: 'Assistant_500Medium',
-    color: '#6D7175',
-    marginBottom: spacing[1],
-    textAlign: 'left',
-  },
-  statCardValue: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#202223',
-    letterSpacing: -0.5,
+  storeName: {
+    fontSize: 20,
+    fontFamily: fonts.bold,
+    color: dt.colors.ink[900],
+    writingDirection: 'rtl',
     textAlign: 'right',
   },
-  statIconContainer: {
-    width: 36,
-    height: 36,
-    borderRadius: borderRadius.md,
+  dateText: {
+    fontSize: 13,
+    fontFamily: fonts.regular,
+    color: dt.colors.ink[600],
+    marginTop: 2,
+    writingDirection: 'rtl',
+    textAlign: 'right',
+  },
+  settingsButton: {
+    width: 44,
+    height: 44,
+    borderRadius: dt.radii.md,
+    backgroundColor: dt.colors.ink[100],
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: spacing[3], // ב-RTL, marginRight = שמאל המסך
   },
-  statChangeContainer: {
-    flexDirection: 'row', // ב-RTL, row = ימין לשמאל
-    alignItems: 'center',
-    gap: spacing[2],
-    marginTop: spacing[2],
-    zIndex: 1,
-    position: 'relative',
+
+  // Revenue Hero
+  revenueHero: {
+    backgroundColor: dt.colors.surface.card,
+    paddingHorizontal: dt.spacing[4],
+    paddingTop: dt.spacing[4],
+    paddingBottom: dt.spacing[4],
+    alignItems: 'flex-start',
+    borderBottomWidth: 1,
+    borderBottomColor: dt.colors.ink[100],
   },
-  changeBadge: {
-    flexDirection: 'row', // ב-RTL, row = ימין לשמאל (אייקון מימין, טקסט משמאל)
-    alignItems: 'center',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: borderRadius.base,
-    borderWidth: 1,
-  },
-  changeBadgePositive: {
-    backgroundColor: '#D1FAE5',
-    borderColor: '#A7F3D0',
-  },
-  changeBadgeNegative: {
-    backgroundColor: '#FEE2E2',
-    borderColor: '#FECACA',
-  },
-  changeText: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    marginLeft: 2, // ב-RTL, marginLeft = רווח מימין
-  },
-  changeTextPositive: {
-    color: '#059669',
-  },
-  changeTextNegative: {
-    color: '#DC2626',
-  },
-  changeLabel: {
-    fontSize: 12,
-    color: '#6D7175',
+  revenueValue: {
+    fontSize: 42,
+    lineHeight: 50,
+    fontFamily: fonts.extraBold,
+    color: dt.colors.ink[950],
+    letterSpacing: 0.5,
+    writingDirection: 'ltr',
     textAlign: 'right',
+  },
+  revenueLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+    gap: 8,
+  },
+  revenueLabel: {
+    fontSize: 14,
+    fontFamily: fonts.regular,
+    color: dt.colors.ink[600],
+    writingDirection: 'rtl',
+  },
+  trendContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: dt.radii.sm,
+  },
+  trendText: {
+    fontSize: 13,
+    fontFamily: fonts.semiBold,
+    fontWeight: '600',
+  },
+
+  // Period Pills
+  periodRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: dt.spacing[4],
+    alignSelf: 'stretch',
+    justifyContent: 'flex-start',
+  },
+  periodPill: {
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: dt.radii.full,
+  },
+  periodPillActive: {
+    backgroundColor: dt.colors.brand[500],
+  },
+  periodPillInactive: {
+    backgroundColor: dt.colors.ink[50],
+    borderWidth: 1,
+    borderColor: dt.colors.ink[200],
+  },
+  periodPillText: {
+    fontSize: 14,
+    fontFamily: fonts.medium,
+    writingDirection: 'rtl',
+  },
+  periodPillTextActive: {
+    color: '#FFFFFF',
+  },
+  periodPillTextInactive: {
+    color: dt.colors.ink[600],
+  },
+
+  // Stats Row
+  statsScrollView: {
+    marginTop: dt.spacing[4],
+  },
+  statsRow: {
+    paddingHorizontal: dt.spacing[4],
+    gap: dt.spacing[3],
+    flexDirection: 'row',
+  },
+
+  // Section
+  section: {
+    paddingHorizontal: dt.spacing[4],
+    marginTop: dt.spacing[6],
+  },
+
+  // Alerts
+  alertsContainer: {
+    gap: dt.spacing[2],
   },
   alertCard: {
-    borderRadius: borderRadius.xl,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: dt.colors.surface.card,
+    borderRadius: dt.radii.lg,
     borderWidth: 1,
-    borderColor: '#FDE68A',
-    backgroundColor: colors.white,
-    ...shadows.sm,
+    borderColor: dt.colors.ink[200],
+    paddingHorizontal: dt.spacing[4],
+    paddingVertical: dt.spacing[3],
+    gap: dt.spacing[3],
+  },
+  alertDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
   },
   alertContent: {
-    flexDirection: 'row', // ב-RTL, row = ימין לשמאל (אייקון מימין, טקסט משמאל)
-    alignItems: 'center',
-    gap: spacing[4],
-  },
-  alertIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#FEF3C7',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#FDE68A',
-  },
-  alertTextContainer: {
-    flex: 1,
-    alignItems: 'flex-end',
-  },
-  alertTitle: {
-    fontSize: 14,
-    color: '#374151',
-    marginBottom: 2,
-    textAlign: 'right',
-  },
-  alertDescription: {
-    fontSize: 12,
-    color: '#6B7280',
-    textAlign: 'right',
-  },
-  alertButton: {
-    backgroundColor: colors.white,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    paddingHorizontal: spacing[3],
-    paddingVertical: 6,
-    borderRadius: borderRadius.md,
-    ...shadows.sm,
-  },
-  alertButtonText: {
-    fontSize: 12,
-    fontFamily: 'Assistant_500Medium',
-    color: '#374151',
-    textAlign: 'center',
-  },
-  quickActionsGrid: {
-    flexDirection: 'row', // ב-RTL, row = ימין לשמאל
-    flexWrap: 'wrap',
-    gap: spacing[3],
-  },
-  quickActionButton: {
-    flex: 1,
-    minWidth: '47%',
-    flexDirection: 'row', // ב-RTL, row = ימין לשמאל (אייקון מימין, טקסט משמאל)
-    alignItems: 'center',
-    gap: spacing[3],
-    padding: spacing[4],
-    borderRadius: borderRadius.xl,
-    backgroundColor: colors.white,
-    borderWidth: 1,
-    borderColor: '#E1E3E5',
-    ...shadows.sm,
-  },
-  quickActionIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: borderRadius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  quickActionIconPrimary: {
-    backgroundColor: '#E4F8F0',
-  },
-  quickActionIconSecondary: {
-    backgroundColor: '#F6F6F7',
-  },
-  quickActionLabel: {
-    flex: 1,
-    fontSize: 14,
-    fontFamily: 'Assistant_500Medium',
-    color: '#202223',
-    textAlign: 'left',
-    flexDirection: 'row-reverse',
-  },
-  activityList: {
-    gap: spacing[3],
-  },
-  activityItem: {
-    flexDirection: 'row', // ב-RTL, row = ימין לשמאל (אייקון מימין, תוכן במרכז, סכום משמאל)
-    alignItems: 'center',
-    gap: spacing[3],
-    padding: spacing[3],
-    borderRadius: borderRadius.xl,
-    backgroundColor: colors.white,
-    borderWidth: 1,
-    borderColor: '#E1E3E5',
-    ...shadows.sm,
-  },
-  activityIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#F6F6F7',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  activityContent: {
     flex: 1,
     alignItems: 'flex-start',
-    textAlign: 'left',
   },
-  activityTitle: {
-    fontSize: 14,
-    color: '#202223',
-    marginBottom: 2,
-    textAlign: 'right',
+  alertLabel: {
+    fontSize: 13,
+    fontFamily: fonts.regular,
+    color: dt.colors.ink[500],
+    writingDirection: 'rtl',
   },
-  activitySubtitle: {
-    fontSize: 12,
-    color: '#6D7175',
-    textAlign: 'right',
+  alertCount: {
+    fontSize: 20,
+    fontFamily: fonts.bold,
+    color: dt.colors.ink[950],
+    marginTop: 2,
   },
-  activityRight: {
-    alignItems: 'flex-start', // ב-RTL עם row, flex-start = שמאל המסך (ימין מבחינת RTL)
-    gap: spacing[1],
+
+  // Quick Actions
+  actionsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: dt.spacing[3],
   },
-  activityAmount: {
-    fontSize: 14,
-    color: '#202223',
-    textAlign: 'right',
+  quickAction: {
+    width: (SCREEN_WIDTH - dt.spacing[4] * 2 - dt.spacing[3]) / 2,
   },
-  activityStatusBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: borderRadius.full,
+  quickActionInner: {
+    backgroundColor: dt.colors.surface.card,
     borderWidth: 1,
-  },
-  activityStatusText: {
-    fontSize: 10,
-    fontFamily: 'Assistant_500Medium',
-    textAlign: 'center',
-  },
-  emptyCard: {
-    padding: spacing[6],
+    borderColor: dt.colors.ink[200],
+    borderRadius: dt.radii.lg,
+    padding: dt.spacing[4],
+    flexDirection: 'row',
     alignItems: 'center',
-    borderStyle: 'dashed',
-    borderColor: colors.gray300,
-    backgroundColor: 'transparent',
+    justifyContent: 'flex-start',
+    gap: dt.spacing[3],
+    minHeight: 64,
+  },
+  quickActionInnerPrimary: {
+    backgroundColor: dt.colors.brand[500],
+    borderColor: dt.colors.brand[500],
+  },
+  quickActionIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: dt.radii.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  quickActionLabel: {
+    fontSize: 15,
+    fontFamily: fonts.medium,
+    color: dt.colors.ink[900],
+    writingDirection: 'rtl',
+    flex: 1,
+    textAlign: 'right',
+  },
+  quickActionLabelPrimary: {
+    color: '#FFFFFF',
+  },
+
+  // Orders
+  ordersCard: {
+    backgroundColor: dt.colors.surface.card,
+    borderRadius: dt.radii.lg,
+    borderWidth: 1,
+    borderColor: dt.colors.ink[200],
+    overflow: 'hidden',
+  },
+  orderRow: {
+    padding: dt.spacing[4],
+    gap: dt.spacing[2],
+  },
+  orderRowBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: dt.colors.ink[100],
+  },
+  orderTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  orderBottomRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  orderAmountRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  orderNumber: {
+    fontSize: 15,
+    fontFamily: fonts.semiBold,
+    color: dt.colors.ink[950],
+    writingDirection: 'rtl',
+  },
+  orderMeta: {
+    fontSize: 12,
+    fontFamily: fonts.regular,
+    color: dt.colors.ink[500],
+    writingDirection: 'rtl',
+  },
+  orderMiniBadge: {
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: dt.radii.sm,
+  },
+  orderMiniBadgeText: {
+    fontSize: 11,
+    fontFamily: fonts.medium,
+    writingDirection: 'rtl',
+  },
+  orderTotal: {
+    fontSize: 15,
+    fontFamily: fonts.bold,
+    color: dt.colors.ink[900],
+  },
+
+  // Chart
+  chartCard: {
+    backgroundColor: dt.colors.surface.card,
+    borderRadius: dt.radii.lg,
+    borderWidth: 1,
+    borderColor: dt.colors.ink[200],
+    padding: dt.spacing[3],
+    overflow: 'hidden',
+  },
+  chartBarsContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: 3,
+    height: 120,
+    paddingBottom: 18,
+  },
+  chartBarCol: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  chartBarArea: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    width: '100%',
+  },
+  chartBar: {
+    width: '100%',
+    borderRadius: 3,
+    minWidth: 4,
+  },
+  chartBarLabel: {
+    fontSize: 9,
+    fontFamily: fonts.regular,
+    color: dt.colors.ink[400],
+    marginTop: 4,
+    position: 'absolute',
+    bottom: -16,
+  },
+  chartSummary: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    paddingTop: dt.spacing[3],
+    borderTopWidth: 1,
+    borderTopColor: dt.colors.ink[100],
+    marginTop: dt.spacing[2],
+  },
+  chartSummaryItem: {
+    alignItems: 'center',
+    gap: 2,
+  },
+  chartSummaryValue: {
+    fontSize: 16,
+    fontFamily: fonts.bold,
+    color: dt.colors.ink[950],
+  },
+  chartSummaryLabel: {
+    fontSize: 12,
+    fontFamily: fonts.regular,
+    color: dt.colors.ink[500],
+    writingDirection: 'rtl',
+  },
+
+  // Top Products
+  topProductsCard: {
+    backgroundColor: dt.colors.surface.card,
+    borderRadius: dt.radii.lg,
+    borderWidth: 1,
+    borderColor: dt.colors.ink[200],
+    overflow: 'hidden',
+  },
+  topProductRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: dt.spacing[4],
+    paddingVertical: dt.spacing[3],
+  },
+  topProductRowBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: dt.colors.ink[100],
+  },
+  topProductInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: dt.spacing[3],
+    flex: 1,
+  },
+  topProductImage: {
+    width: 40,
+    height: 40,
+    borderRadius: dt.radii.md,
+    backgroundColor: dt.colors.ink[50],
+  },
+  topProductImagePlaceholder: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  topProductDetails: {
+    flex: 1,
+    alignItems: 'flex-start',
+  },
+  topProductName: {
+    fontSize: 14,
+    fontFamily: fonts.medium,
+    color: dt.colors.ink[900],
+    writingDirection: 'rtl',
+    textAlign: 'right',
+  },
+  topProductQuantity: {
+    fontSize: 12,
+    fontFamily: fonts.regular,
+    color: dt.colors.ink[500],
+    writingDirection: 'rtl',
+    marginTop: 1,
+  },
+  topProductRevenueCol: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  topProductRevenue: {
+    fontSize: 14,
+    fontFamily: fonts.bold,
+    color: dt.colors.ink[900],
+  },
+
+  // Empty
+  emptyCard: {
+    backgroundColor: dt.colors.surface.card,
+    borderRadius: dt.radii.lg,
+    borderWidth: 1,
+    borderColor: dt.colors.ink[200],
+    padding: 40,
+    alignItems: 'center',
+    gap: 8,
+  },
+  emptyTitle: {
+    fontSize: 15,
+    fontFamily: fonts.medium,
+    color: dt.colors.ink[800],
+    writingDirection: 'rtl',
+  },
+  emptySubtitle: {
+    fontSize: 13,
+    fontFamily: fonts.regular,
+    color: dt.colors.ink[500],
+    writingDirection: 'rtl',
   },
 });

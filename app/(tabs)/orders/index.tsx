@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import {
   View,
@@ -6,58 +6,149 @@ import {
   StyleSheet,
   RefreshControl,
   TouchableOpacity,
-  TextInput,
+  Platform,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useInfiniteOrders, useMarkOrderAsRead } from '@/hooks';
 import {
   Text,
-  Card,
-  Badge,
-  OrderStatusBadge,
-  LoadingScreen,
   EmptyState,
-  colors,
-  spacing,
+  SearchBar,
+  FilterTabs,
+  OrderSkeleton,
+  designTokens,
   fonts,
-  borderRadius,
-  shadows,
 } from '@/components/ui';
-import { formatCurrency, formatRelativeDate } from '@/lib/utils/format';
-import type { Order, OrderStatus } from '@/types';
+import { formatCurrency, formatDateTimeShort } from '@/lib/utils/format';
+import type { Order, OrderStatus, OrdersListResponse, OrdersStats } from '@/types';
 
-const STATUS_TABS: { key: OrderStatus | 'all'; label: string }[] = [
+type OrdersTabKey = 'all' | 'pendingPayment' | 'awaitingShipment' | 'paid';
+
+const STATUS_TABS: { key: OrdersTabKey; label: string }[] = [
   { key: 'all', label: 'הכל' },
-  { key: 'pending', label: 'ממתינות' },
-  { key: 'processing', label: 'בטיפול' },
-  { key: 'shipped', label: 'נשלחו' },
-  { key: 'delivered', label: 'נמסרו' },
+  { key: 'pendingPayment', label: 'ממתינות לתשלום' },
+  { key: 'awaitingShipment', label: 'ממתינות למשלוח' },
+  { key: 'paid', label: 'שולמו' },
 ];
+
+const { colors, spacing, radii } = designTokens;
+const monoFont = Platform.OS === 'ios' ? 'Menlo' : 'monospace';
+
+function tabFromRouteParam(raw: string | string[] | undefined): OrdersTabKey {
+  const s = Array.isArray(raw) ? raw[0] : raw;
+  if (!s) return 'all';
+  if (s === 'all' || s === 'paid' || s === 'pendingPayment' || s === 'awaitingShipment') {
+    return s;
+  }
+  // Legacy deep-links from older builds / dashboard alerts
+  if (s === 'pending') return 'pendingPayment';
+  if (s === 'confirmed' || s === 'processing') return 'awaitingShipment';
+  return 'all';
+}
+
+function tabCountFor(stats: OrdersStats | undefined, key: OrdersTabKey): number | undefined {
+  if (!stats || key === 'all') return undefined;
+  if (key === 'pendingPayment') return stats.pendingPayment;
+  if (key === 'awaitingShipment') return stats.awaitingShipment;
+  if (key === 'paid') return stats.paidShipped ?? stats.paid;
+  return undefined;
+}
+
+// Financial status badge config
+const FINANCIAL_LABELS: Record<string, string> = {
+  pending: 'ממתין לתשלום',
+  paid: 'שולמה',
+  partially_paid: 'שולם חלקית',
+  refunded: 'זוכה',
+  partially_refunded: 'זיכוי חלקי',
+};
+
+function getFinancialBadgeColors(financialStatus: string) {
+  switch (financialStatus) {
+    case 'paid':
+      return { bg: colors.semantic.success.light, text: colors.semantic.success.dark };
+    case 'pending':
+      return { bg: colors.semantic.warning.light, text: colors.semantic.warning.dark };
+    case 'refunded':
+    case 'partially_refunded':
+      return { bg: colors.ink[100], text: colors.ink[600] };
+    default:
+      return { bg: colors.ink[100], text: colors.ink[600] };
+  }
+}
 
 export default function OrdersListScreen() {
   const router = useRouter();
-  const [selectedStatus, setSelectedStatus] = useState<OrderStatus | 'all'>('all');
+  const params = useLocalSearchParams<{ status?: string | string[]; customerId?: string }>();
+  const [selectedStatus, setSelectedStatus] = useState<OrdersTabKey>(() =>
+    tabFromRouteParam(params.status)
+  );
+  const customerId = typeof params.customerId === 'string' ? params.customerId : undefined;
+
+  useEffect(() => {
+    const raw = params.status;
+    if (raw === undefined || raw === '') return;
+    setSelectedStatus(tabFromRouteParam(raw));
+  }, [params.status]);
+
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(searchQuery.trim()), 400);
+    return () => clearTimeout(t);
+  }, [searchQuery]);
+
+  const filterParams = (() => {
+    switch (selectedStatus) {
+      case 'pendingPayment':
+        return { financialStatus: 'pending' as const };
+      case 'awaitingShipment':
+        return { financialStatus: 'paid' as const, fulfillmentStatus: 'unfulfilled' as const };
+      case 'paid':
+        return { financialStatus: 'paid' as const, fulfillmentStatus: 'fulfilled' as const };
+      default:
+        return {};
+    }
+  })();
 
   const {
     data,
     isLoading,
     isFetchingNextPage,
+    isFetching,
     hasNextPage,
     fetchNextPage,
     refetch,
-    isRefetching,
   } = useInfiniteOrders({
-    status: selectedStatus === 'all' ? undefined : selectedStatus,
-    search: searchQuery || undefined,
+    ...filterParams,
+    search: debouncedSearch || undefined,
+    customerId,
     limit: 20,
   });
 
   const markAsRead = useMarkOrderAsRead();
 
-  const orders = data?.pages.flatMap((page) => page.orders) || [];
-  const stats = data?.pages[0]?.stats;
+  const orders =
+    data?.pages.flatMap((page: OrdersListResponse) => page.orders) ?? [];
+  const stats = (data?.pages[0] as OrdersListResponse | undefined)?.stats;
+
+  const filterTabs = STATUS_TABS.map((tab) => ({
+    key: tab.key,
+    label: tab.label,
+    count: tabCountFor(stats, tab.key),
+  }));
+
+  const handleRefresh = useCallback(async () => {
+    setIsRefreshing(true);
+    try {
+      await refetch();
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [refetch]);
 
   const handleOrderPress = useCallback((order: Order) => {
     if (!order.isRead) {
@@ -73,63 +164,26 @@ export default function OrdersListScreen() {
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   const renderOrder = useCallback(({ item: order }: { item: Order }) => (
-    <OrderCard order={order} onPress={() => handleOrderPress(order)} />
-  ), [handleOrderPress]);
+    <OrderCard order={order} onPress={() => handleOrderPress(order)} activeTab={selectedStatus} />
+  ), [handleOrderPress, selectedStatus]);
 
-  if (isLoading) {
-    return <LoadingScreen message="טוען הזמנות..." />;
-  }
+  const showInitialLoading = isLoading && orders.length === 0;
 
   return (
     <SafeAreaView style={styles.container} edges={[]}>
-      {/* Search */}
-      <View style={styles.searchContainer}>
-        <TextInput
-          style={styles.searchInput}
-          placeholder="חפש לפי מספר הזמנה, שם או אימייל..."
-          placeholderTextColor={colors.textMuted}
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          returnKeyType="search"
-        />
-      </View>
+      <SearchBar
+        value={searchQuery}
+        onChangeText={setSearchQuery}
+        placeholder="חיפוש הזמנה..."
+        isLoading={isFetching && !!searchQuery}
+      />
 
-      {/* Status Tabs */}
-      <View style={styles.tabsContainer}>
-        <FlatList
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          data={STATUS_TABS}
-          keyExtractor={(item) => item.key}
-          contentContainerStyle={styles.tabsContent}
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              style={[
-                styles.tab,
-                selectedStatus === item.key && styles.tabActive,
-              ]}
-              onPress={() => setSelectedStatus(item.key)}
-            >
-              <Text
-                weight={selectedStatus === item.key ? 'semiBold' : 'regular'}
-                style={[
-                  styles.tabText,
-                  selectedStatus === item.key && styles.tabTextActive,
-                ]}
-              >
-                {item.label}
-                {stats && item.key !== 'all' && stats[item.key as keyof typeof stats] > 0 && (
-                  <Text style={styles.tabCount}>
-                    {' '}({stats[item.key as keyof typeof stats]})
-                  </Text>
-                )}
-              </Text>
-            </TouchableOpacity>
-          )}
-        />
-      </View>
+      <FilterTabs
+        tabs={filterTabs}
+        activeTab={selectedStatus}
+        onTabPress={(key) => setSelectedStatus(key as OrdersTabKey)}
+      />
 
-      {/* Orders List */}
       <FlatList
         data={orders}
         keyExtractor={(item) => item.id}
@@ -137,21 +191,35 @@ export default function OrdersListScreen() {
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={isRefetching} onRefresh={refetch} />
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={handleRefresh}
+            tintColor={colors.brand[500]}
+            colors={[colors.brand[500]]}
+
+          />
         }
         onEndReached={handleLoadMore}
         onEndReachedThreshold={0.5}
         ListEmptyComponent={
-          <EmptyState
-            icon={<Ionicons name="cube-outline" size={48} color={colors.gray400} />}
-            title="אין הזמנות"
-            description={searchQuery ? 'נסה חיפוש אחר' : 'הזמנות חדשות יופיעו כאן'}
-          />
+          showInitialLoading ? (
+            <View>
+              {Array.from({ length: 6 }).map((_, i) => (
+                <OrderSkeleton key={i} />
+              ))}
+            </View>
+          ) : (
+            <EmptyState
+              icon={<Ionicons name="receipt-outline" size={48} color={colors.brand[500]} />}
+              title="אין הזמנות"
+              description={searchQuery ? 'נסה חיפוש אחר' : 'הזמנות חדשות יופיעו כאן'}
+            />
+          )
         }
         ListFooterComponent={
           isFetchingNextPage && hasNextPage && orders.length > 0 ? (
             <View style={styles.loadingMore}>
-              <Text color="secondary">טוען עוד...</Text>
+              <Text style={styles.loadingText}>טוען עוד...</Text>
             </View>
           ) : <View style={{ height: spacing[4] }} />
         }
@@ -160,68 +228,58 @@ export default function OrdersListScreen() {
   );
 }
 
-// Order Card Component
-function OrderCard({ order, onPress }: { order: Order; onPress: () => void }) {
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'pending': return { bg: '#FEF3C7', text: '#92400E', border: '#FDE68A' };
-      case 'confirmed': return { bg: '#D1FAE5', text: '#065F46', border: '#A7F3D0' };
-      case 'processing': return { bg: '#DBEAFE', text: '#1E40AF', border: '#BFDBFE' };
-      case 'shipped': return { bg: '#E0E7FF', text: '#4338CA', border: '#C7D2FE' };
-      case 'delivered': return { bg: '#D1FAE5', text: '#065F46', border: '#A7F3D0' };
-      case 'cancelled': return { bg: '#FEE2E2', text: '#991B1B', border: '#FECACA' };
-      default: return { bg: '#F3F4F6', text: '#374151', border: '#E5E7EB' };
-    }
-  };
+function OrderCard({ order, onPress, activeTab }: { order: Order; onPress: () => void; activeTab: OrdersTabKey }) {
+  const financialColors = getFinancialBadgeColors(order.financialStatus);
+  const financialLabel = FINANCIAL_LABELS[order.financialStatus] || order.financialStatus;
+  const orderNum = order.orderNumber.startsWith('#') ? order.orderNumber : `#${order.orderNumber}`;
+  const statusColors = designTokens.colors.orderStatus[order.status as OrderStatus] || { bg: colors.ink[100], text: colors.ink[600] };
+  const statusLabel = order.status === 'pending' ? 'ממתינה' : order.status === 'confirmed' ? 'אושרה' : order.status === 'processing' ? 'בטיפול' : order.status === 'shipped' ? 'נשלחה' : order.status === 'delivered' ? 'נמסרה' : order.status === 'cancelled' ? 'בוטלה' : 'זוכתה';
 
-  const statusColors = getStatusColor(order.status);
-  const statusLabels: Record<string, string> = {
-    pending: 'ממתינה',
-    confirmed: 'אושרה',
-    processing: 'בטיפול',
-    shipped: 'נשלחה',
-    delivered: 'הושלם',
-    cancelled: 'בוטלה',
-  };
+  const showFinancialBadge = activeTab === 'all' || activeTab === 'awaitingShipment';
+  const showStatusBadge = true;
+  const isPOS = order.utmSource === 'pos';
 
   return (
-    <TouchableOpacity 
-      onPress={onPress} 
-      style={[styles.orderCard, !order.isRead && styles.unreadOrder]}
+    <TouchableOpacity
+      onPress={onPress}
+      style={styles.orderCard}
       activeOpacity={0.7}
     >
-      <View style={styles.orderContent}>
-        {/* Icon */}
-        <View style={styles.orderIcon}>
-          <Ionicons name="bag-outline" size={20} color={colors.gray500} />
+      <View style={styles.orderTopRow}>
+        <View style={styles.orderTitleRow}>
+          <Text style={styles.orderTitle}>{orderNum}</Text>
+          {!order.isRead && <View style={styles.unreadDot} />}
+          {isPOS && (
+            <View style={styles.posBadge}>
+              <Text style={styles.posBadgeText}>קופה</Text>
+            </View>
+          )}
         </View>
-
-        {/* Content */}
-        <View style={styles.orderInfo}>
-          <View style={styles.orderTitleRow}>
-            <Text style={styles.orderTitle}>
-              הזמנה #{order.orderNumber}
-            </Text>
-            {!order.isRead && <View style={styles.unreadDot} />}
-          </View>
-          <Text style={styles.orderSubtitle}>
-            {order.customerName} • {formatRelativeDate(order.createdAt)}
-          </Text>
+        <View style={styles.orderAmountWrap}>
+          <Text style={styles.orderAmount}>{formatCurrency(order.total)}</Text>
+          <Ionicons name="chevron-back" size={14} color={colors.ink[300]} />
         </View>
+      </View>
 
-        {/* Right Side - Amount & Status */}
-        <View style={styles.orderRight}>
-          <Text style={styles.orderAmount}>
-            {formatCurrency(order.total)}
-          </Text>
-          <View style={[
-            styles.statusBadge,
-            { backgroundColor: statusColors.bg, borderColor: statusColors.border }
-          ]}>
-            <Text style={[styles.statusText, { color: statusColors.text }]}>
-              {statusLabels[order.status] || order.status}
-            </Text>
-          </View>
+      <View style={styles.orderBottomRow}>
+        <Text style={styles.orderSubtitle}>
+          {order.customerName} {'\u00B7'} {formatDateTimeShort(order.createdAt)}
+        </Text>
+        <View style={styles.badgesRow}>
+          {showFinancialBadge && (
+            <View style={[styles.miniBadge, { backgroundColor: financialColors.bg }]}>
+              <Text style={[styles.miniBadgeText, { color: financialColors.text }]}>
+                {financialLabel}
+              </Text>
+            </View>
+          )}
+          {showStatusBadge && (
+            <View style={[styles.miniBadge, { backgroundColor: statusColors.bg }]}>
+              <Text style={[styles.miniBadgeText, { color: statusColors.text }]}>
+                {statusLabel}
+              </Text>
+            </View>
+          )}
         </View>
       </View>
     </TouchableOpacity>
@@ -231,137 +289,105 @@ function OrderCard({ order, onPress }: { order: Order; onPress: () => void }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F6F6F7',
-  },
-  searchContainer: {
-    paddingHorizontal: spacing[4],
-    paddingVertical: spacing[2],
-  },
-  searchInput: {
-    backgroundColor: colors.white,
-    borderRadius: borderRadius.xl,
-    paddingHorizontal: spacing[4],
-    paddingVertical: spacing[3],
-    fontFamily: fonts.regular,
-    fontSize: 16,
-    textAlign: 'right',
-    borderWidth: 1,
-    borderColor: '#E1E3E5',
-    ...shadows.sm,
-  },
-  tabsContainer: {
-    borderBottomWidth: 1,
-    borderBottomColor: colors.borderLight,
-  },
-  tabsContent: {
-    paddingHorizontal: spacing[4],
-    paddingVertical: spacing[2],
-    gap: spacing[2],
-  },
-  tab: {
-    paddingHorizontal: spacing[4],
-    paddingVertical: spacing[2],
-    borderRadius: borderRadius.full,
-    backgroundColor: colors.white,
-    borderWidth: 1,
-    borderColor: '#E1E3E5',
-  },
-  tabActive: {
-    backgroundColor: '#00785C',
-    borderColor: '#00785C',
-  },
-  tabText: {
-    color: '#6D7175',
-    textAlign: 'center',
-  },
-  tabTextActive: {
-    color: colors.white,
-    textAlign: 'center',
-  },
-  tabCount: {
-    opacity: 0.8,
+    backgroundColor: colors.surface.background,
   },
   listContent: {
     padding: spacing[4],
   },
+
+  // Order Card
   orderCard: {
-    marginBottom: spacing[3],
-    borderRadius: borderRadius.xl,
-    borderWidth: 1,
-    borderColor: '#E1E3E5',
-    backgroundColor: colors.white,
-    ...shadows.sm,
-    padding: spacing[4],
-    minHeight: 80,
+    marginBottom: spacing[2],
+    backgroundColor: colors.surface.card,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.ink[100],
+    paddingHorizontal: spacing[4],
+    paddingVertical: spacing[4],
+    gap: spacing[2],
   },
-  unreadOrder: {
-    borderLeftWidth: 3,
-    borderLeftColor: '#00785C',
-  },
-  orderContent: {
-    flexDirection: 'row', // ב-RTL, row = ימין לשמאל (אייקון מימין, תוכן במרכז, סכום משמאל)
+  orderTopRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing[3],
-  },
-  orderIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#F6F6F7',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  orderInfo: {
-    flex: 1,
-    alignItems: 'flex-end', // יישור לימין
+    justifyContent: 'space-between',
   },
   orderTitleRow: {
-    flexDirection: 'row', // ב-RTL, row = ימין לשמאל (נקודה מימין, טקסט משמאל)
+    flexDirection: 'row',
     alignItems: 'center',
     gap: spacing[2],
-    marginBottom: 2,
   },
   unreadDot: {
-    width: 8,
-    height: 8,
+    width: 7,
+    height: 7,
     borderRadius: 4,
-    backgroundColor: '#00785C',
+    backgroundColor: colors.brand[500],
   },
   orderTitle: {
-    fontSize: 14,
-    color: '#202223',
-    textAlign: 'right',
+    fontSize: 16,
     fontFamily: fonts.semiBold,
+    color: colors.ink[950],
+    writingDirection: 'rtl',
   },
-  orderSubtitle: {
-    fontSize: 12,
-    color: '#6D7175',
-    textAlign: 'right',
-  },
-  orderRight: {
-    alignItems: 'flex-start', // ב-RTL עם row, flex-start = שמאל המסך
-    gap: spacing[1],
+  orderAmountWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
   orderAmount: {
-    fontSize: 14,
-    color: '#202223',
-    textAlign: 'left',
+    fontSize: 16,
     fontFamily: fonts.bold,
+    color: colors.ink[950],
   },
-  statusBadge: {
-    paddingHorizontal: 6,
+  orderBottomRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  orderSubtitle: {
+    fontSize: 13,
+    fontFamily: fonts.regular,
+    color: colors.ink[400],
+    writingDirection: 'rtl',
+  },
+  badgesRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[1],
+  },
+  miniBadge: {
+    paddingHorizontal: 7,
     paddingVertical: 2,
-    borderRadius: borderRadius.base,
-    borderWidth: 1,
+    borderRadius: radii.sm,
   },
-  statusText: {
+  miniBadgeText: {
+    fontSize: 11,
+    fontFamily: fonts.medium,
+    writingDirection: 'rtl',
+  },
+  posBadge: {
+    backgroundColor: colors.brand[50],
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: radii.sm,
+    borderWidth: 1,
+    borderColor: colors.brand[200],
+  },
+  posBadgeText: {
     fontSize: 10,
     fontFamily: fonts.medium,
-    textAlign: 'center',
+    color: colors.brand[600],
+    writingDirection: 'rtl',
   },
+
+  // Loading
   loadingMore: {
     padding: spacing[4],
     alignItems: 'center',
   },
+  loadingText: {
+    fontSize: 13,
+    color: colors.ink[400],
+    fontFamily: fonts.regular,
+    writingDirection: 'rtl',
+    textAlign: 'right',
+  },
 });
-
