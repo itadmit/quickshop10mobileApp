@@ -7,12 +7,13 @@ import {
   Switch,
   Linking,
   Platform,
+  Alert,
 } from 'react-native';
-import { Stack, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Notifications from 'expo-notifications';
 import { useNotificationSettings, useUpdateNotificationSettings } from '@/hooks';
+import { scheduleLocalNotification } from '@/lib/notifications';
 import {
   Text,
   Badge,
@@ -35,7 +36,7 @@ interface ToggleRowProps {
 function ToggleRow({ icon, title, subtitle, value, onValueChange, disabled }: ToggleRowProps) {
   return (
     <View style={[styles.row, disabled && { opacity: 0.5 }]}>
-      <View style={styles.rowIcon}>
+      <View style={styles.rowIconContainer}>
         <Ionicons name={icon} size={18} color={dt.colors.ink[600]} />
       </View>
       <View style={styles.rowContent}>
@@ -64,10 +65,10 @@ function Section({ title, children }: { title?: string; children: React.ReactNod
 }
 
 export default function NotificationsSettingsScreen() {
-  const router = useRouter();
   const { data, isLoading, isError, refetch } = useNotificationSettings();
   const update = useUpdateNotificationSettings();
   const [permissionStatus, setPermissionStatus] = React.useState<Notifications.PermissionStatus | null>(null);
+  const [sendingTest, setSendingTest] = React.useState(false);
 
   React.useEffect(() => {
     (async () => {
@@ -91,14 +92,34 @@ export default function NotificationsSettingsScreen() {
     if (status !== 'granted') openSystemSettings();
   };
 
+  const sendTest = async () => {
+    if (sendingTest) return;
+    if (noPermission) {
+      Alert.alert('אין הרשאה', 'יש לאפשר התראות בהגדרות המערכת לפני בדיקה.');
+      return;
+    }
+    setSendingTest(true);
+    try {
+      await scheduleLocalNotification(
+        '🧪 בדיקת התראה',
+        'אם אתה רואה את ההודעה הזאת, ההתראות עובדות 🎉',
+        { type: 'test' }
+      );
+    } catch (e) {
+      Alert.alert('שגיאה', 'לא הצלחנו לשלוח התראת בדיקה');
+    } finally {
+      // small debounce so the spinner is visible briefly
+      setTimeout(() => setSendingTest(false), 600);
+    }
+  };
+
   if (isLoading) {
     return <LoadingScreen message="טוען הגדרות..." />;
   }
 
   if (isError || !settings) {
     return (
-      <SafeAreaView style={styles.container}>
-        <Stack.Screen options={{ title: 'התראות', headerShown: true }} />
+      <SafeAreaView style={styles.container} edges={[]}>
         <View style={styles.errorWrap}>
           <Text style={styles.errorText}>שגיאה בטעינת הגדרות ההתראות</Text>
           <TouchableOpacity style={styles.retryBtn} onPress={() => refetch()}>
@@ -111,7 +132,6 @@ export default function NotificationsSettingsScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={[]}>
-      <Stack.Screen options={{ title: 'התראות', headerShown: true }} />
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         {/* Permission / token banner */}
         {(noPermission || noToken) && (
@@ -176,6 +196,31 @@ export default function NotificationsSettingsScreen() {
           />
         </Section>
 
+        {/* Test notification */}
+        <Section title="בדיקה">
+          <TouchableOpacity
+            style={styles.testRow}
+            onPress={sendTest}
+            disabled={sendingTest || noPermission}
+            activeOpacity={0.7}
+          >
+            <View style={styles.rowIconContainer}>
+              <Ionicons
+                name="paper-plane-outline"
+                size={18}
+                color={sendingTest ? dt.colors.ink[400] : dt.colors.brand[500]}
+              />
+            </View>
+            <View style={styles.rowContent}>
+              <Text style={[styles.rowTitle, { color: noPermission ? dt.colors.ink[400] : dt.colors.brand[500] }]}>
+                {sendingTest ? 'שולח...' : 'שליחת התראת בדיקה'}
+              </Text>
+              <Text style={styles.rowSubtitle}>תופיע במכשיר זה כדי לוודא שההתראות עובדות</Text>
+            </View>
+            <Ionicons name="chevron-back" size={16} color={dt.colors.ink[300]} />
+          </TouchableOpacity>
+        </Section>
+
         {/* Status footer */}
         <View style={styles.statusRow}>
           <Badge variant={settings.hasPushToken ? 'success' : 'default'} size="sm">
@@ -230,16 +275,17 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
 
-  // Section
+  // Section — matches more.tsx
   section: {
     gap: dt.spacing[2],
   },
   sectionTitle: {
     fontSize: 13,
-    fontFamily: fonts.semiBold,
+    fontFamily: fonts.medium,
     color: dt.colors.ink[500],
-    paddingHorizontal: dt.spacing[1],
     textAlign: 'right',
+    marginBottom: dt.spacing[2],
+    paddingHorizontal: dt.spacing[1],
   },
   card: {
     backgroundColor: dt.colors.surface.card,
@@ -249,29 +295,35 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
 
-  // Row
+  // Row — matches more.tsx menuItem
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: dt.spacing[3],
-    paddingHorizontal: dt.spacing[4],
+    padding: dt.spacing[4],
     gap: dt.spacing[3],
   },
-  rowIcon: {
+  testRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: dt.spacing[4],
+    gap: dt.spacing[3],
+  },
+  rowIconContainer: {
     width: 36,
     height: 36,
-    borderRadius: 18,
-    backgroundColor: dt.colors.ink[100],
+    borderRadius: dt.radii.md,
+    backgroundColor: dt.colors.ink[50],
     alignItems: 'center',
     justifyContent: 'center',
   },
   rowContent: {
     flex: 1,
+    alignItems: 'flex-start',
   },
   rowTitle: {
     fontSize: 15,
     fontFamily: fonts.medium,
-    color: dt.colors.ink[900],
+    color: dt.colors.ink[950],
     textAlign: 'right',
   },
   rowSubtitle: {
@@ -283,7 +335,7 @@ const styles = StyleSheet.create({
   divider: {
     height: 1,
     backgroundColor: dt.colors.ink[100],
-    marginStart: 56,
+    marginStart: dt.spacing[4] + 36 + dt.spacing[3],
   },
 
   // Status footer
