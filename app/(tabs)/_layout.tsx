@@ -2,8 +2,13 @@ import React from 'react';
 import { Tabs } from 'expo-router';
 import { View, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Text, colors, fonts } from '@/components/ui';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Text, fonts, designTokens } from '@/components/ui';
 import { useAppStore } from '@/stores';
+import { useAuthStore } from '@/stores/auth';
+import { hapticSelection } from '@/lib/utils/haptics';
+
+const dt = designTokens;
 
 // Tab icons
 function TabIcon({ name, focused }: { name: string; focused: boolean }) {
@@ -12,49 +17,62 @@ function TabIcon({ name, focused }: { name: string; focused: boolean }) {
     orders: { name: 'cube', outline: 'cube-outline' },
     products: { name: 'bag', outline: 'bag-outline' },
     customers: { name: 'people', outline: 'people-outline' },
-    more: { name: 'settings', outline: 'settings-outline' },
+    pos: { name: 'card', outline: 'card-outline' },
+    more: { name: 'ellipsis-horizontal', outline: 'ellipsis-horizontal-outline' },
   };
 
-  const icon = iconMap[name] || { name: 'phone-portrait', outline: 'phone-portrait-outline' };
+  const icon = iconMap[name] || { name: 'apps', outline: 'apps-outline' };
   const iconName = focused ? icon.name : icon.outline;
 
   return (
-    <Ionicons 
-      name={iconName} 
-      size={24} 
-      color={focused ? colors.primary : colors.gray400} 
+    <Ionicons
+      name={iconName}
+      size={22}
+      color={focused ? dt.colors.brand[500] : dt.colors.ink[400]}
     />
   );
 }
 
 export default function TabsLayout() {
   const unreadNotifications = useAppStore((s) => s.unreadNotifications);
+  const activePlugins = useAuthStore((s) => s.activePlugins);
+  const hasPOS = activePlugins.includes('pos');
+  const insets = useSafeAreaInsets();
+  const tabBarHeight = 40 + Math.max(insets.bottom, 4);
 
   return (
     <Tabs
+      screenListeners={{ tabPress: () => hapticSelection() }}
       screenOptions={{
         headerShown: true,
         headerTitleAlign: 'center',
         headerTitleStyle: {
           fontFamily: fonts.semiBold,
-          fontSize: 18,
+          fontSize: 17,
+          color: dt.colors.ink[950],
         },
         headerStyle: {
-          backgroundColor: colors.surface,
+          backgroundColor: dt.colors.surface.card,
+          shadowColor: 'transparent',
+          borderBottomWidth: 1,
+          borderBottomColor: dt.colors.ink[100],
+          elevation: 0,
         },
         tabBarStyle: {
-          backgroundColor: colors.surface,
-          borderTopColor: colors.borderLight,
-          height: 60,
-          paddingBottom: 8,
-          paddingTop: 8,
+          backgroundColor: dt.colors.surface.card,
+          borderTopColor: dt.colors.ink[100],
+          borderTopWidth: 1,
+          height: tabBarHeight,
+          paddingBottom: Math.max(insets.bottom, 4),
+          paddingTop: 4,
+          elevation: 0,
         },
         tabBarLabelStyle: {
           fontFamily: fonts.medium,
           fontSize: 11,
         },
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.gray400,
+        tabBarActiveTintColor: dt.colors.brand[500],
+        tabBarInactiveTintColor: dt.colors.ink[400],
         tabBarPosition: 'bottom',
       }}
     >
@@ -62,7 +80,7 @@ export default function TabsLayout() {
         name="index"
         options={{
           title: 'בית',
-          headerShown: false, // Using custom header in the screen
+          headerShown: false,
           tabBarIcon: ({ focused }) => <TabIcon name="index" focused={focused} />,
         }}
       />
@@ -70,7 +88,7 @@ export default function TabsLayout() {
         name="orders"
         options={{
           title: 'הזמנות',
-          headerShown: false, // Has its own stack
+          headerShown: false,
           tabBarIcon: ({ focused }) => <TabIcon name="orders" focused={focused} />,
         }}
       />
@@ -78,7 +96,7 @@ export default function TabsLayout() {
         name="products"
         options={{
           title: 'מוצרים',
-          headerShown: false, // Has its own stack
+          headerShown: false,
           tabBarIcon: ({ focused }) => <TabIcon name="products" focused={focused} />,
         }}
       />
@@ -86,8 +104,17 @@ export default function TabsLayout() {
         name="customers"
         options={{
           title: 'לקוחות',
-          headerShown: false, // Has its own stack
+          headerShown: false,
           tabBarIcon: ({ focused }) => <TabIcon name="customers" focused={focused} />,
+        }}
+      />
+      <Tabs.Screen
+        name="pos"
+        options={{
+          title: 'קופה',
+          headerShown: false,
+          href: hasPOS ? '/(tabs)/pos' : null,
+          tabBarIcon: ({ focused }) => <TabIcon name="pos" focused={focused} />,
         }}
       />
       <Tabs.Screen
@@ -109,6 +136,27 @@ export default function TabsLayout() {
           ),
         }}
       />
+      <Tabs.Screen
+        name="discounts"
+        options={{
+          href: null,
+          headerShown: false,
+        }}
+      />
+      <Tabs.Screen
+        name="analytics"
+        options={{
+          href: null,
+          headerShown: false,
+        }}
+      />
+      <Tabs.Screen
+        name="notifications"
+        options={{
+          href: null,
+          headerShown: false,
+        }}
+      />
     </Tabs>
   );
 }
@@ -117,19 +165,18 @@ const styles = StyleSheet.create({
   badge: {
     position: 'absolute',
     top: -4,
-    right: -8,
-    backgroundColor: colors.error,
+    right: -10,
+    backgroundColor: dt.colors.semantic.danger.DEFAULT,
     borderRadius: 10,
-    minWidth: 18,
-    height: 18,
+    minWidth: 16,
+    height: 16,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 4,
   },
   badgeText: {
-    color: colors.white,
+    color: '#FFFFFF',
     fontSize: 10,
-    fontWeight: 'bold',
+    fontFamily: fonts.bold,
   },
 });
-

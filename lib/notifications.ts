@@ -4,10 +4,13 @@ import { Platform } from 'react-native';
 import { registerPushToken } from './api/auth';
 import Constants from 'expo-constants';
 
-// Configure notification handler
+// Configure notification handler.
+// SDK 54+ requires shouldShowBanner / shouldShowList instead of the deprecated
+// shouldShowAlert; without them iOS silently swallows the foreground banner.
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
-    shouldShowAlert: true,
+    shouldShowBanner: true,
+    shouldShowList: true,
     shouldPlaySound: true,
     shouldSetBadge: true,
   }),

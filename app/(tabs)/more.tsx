@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import {
   View,
@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Alert,
   Linking,
+  Modal,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -15,12 +16,16 @@ import { useAuth } from '@/hooks';
 import { useAuthStore } from '@/stores';
 import {
   Text,
-  Card,
   Badge,
-  colors,
-  spacing,
-  borderRadius,
+  designTokens,
+  fonts,
 } from '@/components/ui';
+
+const dt = designTokens;
+
+const QUICKSHOP_DOMAIN = 'my-quickshop.com';
+const SUPPORT_EMAIL = 'info@quick-shop.co.il';
+const SUPPORT_WHATSAPP = '+972552554432';
 
 interface MenuItemProps {
   icon: keyof typeof Ionicons.glyphMap;
@@ -28,26 +33,41 @@ interface MenuItemProps {
   subtitle?: string;
   badge?: string;
   onPress: () => void;
+  destructive?: boolean;
 }
 
-function MenuItem({ icon, title, subtitle, badge, onPress }: MenuItemProps) {
+function MenuItem({ icon, title, subtitle, badge, onPress, destructive }: MenuItemProps) {
   return (
-    <TouchableOpacity style={styles.menuItem} onPress={onPress}>
-      <Ionicons name="chevron-back" size={16} color={colors.textMuted} />
+    <TouchableOpacity style={styles.menuItem} onPress={onPress} activeOpacity={0.7}>
+      <View
+        style={[
+          styles.menuIconContainer,
+          destructive && { backgroundColor: dt.colors.semantic.danger.light },
+        ]}
+      >
+        <Ionicons
+          name={icon}
+          size={18}
+          color={destructive ? dt.colors.semantic.danger.DEFAULT : dt.colors.ink[600]}
+        />
+      </View>
+      <View style={styles.menuContent}>
+        <Text
+          style={[
+            styles.menuTitle,
+            destructive && { color: dt.colors.semantic.danger.DEFAULT },
+          ]}
+        >
+          {title}
+        </Text>
+        {subtitle && <Text style={styles.menuSubtitle}>{subtitle}</Text>}
+      </View>
       {badge && (
         <Badge variant="error" size="sm">
           {badge}
         </Badge>
       )}
-      <View style={styles.menuContent}>
-        <Text weight="medium" style={{ textAlign: 'right' }}>{title}</Text>
-        {subtitle && (
-          <Text color="secondary" size="sm" style={{ textAlign: 'right' }}>
-            {subtitle}
-          </Text>
-        )}
-      </View>
-      <Ionicons name={icon} size={20} color={colors.textSecondary} style={styles.menuIcon} />
+      <Ionicons name="chevron-back" size={16} color={dt.colors.ink[300]} />
     </TouchableOpacity>
   );
 }
@@ -55,14 +75,8 @@ function MenuItem({ icon, title, subtitle, badge, onPress }: MenuItemProps) {
 function MenuSection({ title, children }: { title?: string; children: React.ReactNode }) {
   return (
     <View style={styles.menuSection}>
-      {title && (
-        <View style={styles.sectionTitleContainer}>
-          <Text color="secondary" size="sm" style={styles.sectionTitle}>
-            {title}
-          </Text>
-        </View>
-      )}
-      <Card padding={0}>{children}</Card>
+      {title && <Text style={styles.sectionTitle}>{title}</Text>}
+      <View style={styles.menuCard}>{children}</View>
     </View>
   );
 }
@@ -70,7 +84,12 @@ function MenuSection({ title, children }: { title?: string; children: React.Reac
 export default function MoreScreen() {
   const router = useRouter();
   const { logout, isLoggingOut } = useAuth();
-  const { currentStore, user, stores } = useAuthStore();
+  const { currentStore, user, stores, activePlugins, refreshCurrentStore } = useAuthStore();
+  const [showContactModal, setShowContactModal] = useState(false);
+
+  useEffect(() => {
+    refreshCurrentStore();
+  }, [refreshCurrentStore]);
 
   const handleLogout = () => {
     Alert.alert(
@@ -98,14 +117,46 @@ export default function MoreScreen() {
     }
   };
 
-  const handleOpenWebDashboard = () => {
-    if (currentStore) {
-      Linking.openURL(`https://quickshop.co.il/dashboard`);
+  const handleOpenStoreSettings = () => {
+    if (currentStore?.slug) {
+      Linking.openURL(`https://${QUICKSHOP_DOMAIN}/shops/${currentStore.slug}/admin/settings`);
     }
   };
 
-  const handleSupport = () => {
-    Linking.openURL('mailto:support@quickshop.co.il');
+  const handleOpenHelp = () => {
+    Linking.openURL(`https://${QUICKSHOP_DOMAIN}/help`);
+  };
+
+  const handleContactEmail = () => {
+    setShowContactModal(false);
+    Linking.openURL(`mailto:${SUPPORT_EMAIL}`);
+  };
+
+  const handleContactWhatsApp = () => {
+    setShowContactModal(false);
+    const message = encodeURIComponent(`שלום, אני צריך עזרה עם חנות ${currentStore?.name || ''}`);
+    Linking.openURL(`https://wa.me/${SUPPORT_WHATSAPP}?text=${message}`);
+  };
+
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      'מחיקת חשבון',
+      'מחיקת החשבון היא פעולה בלתי הפיכה. תועבר לדף ההגדרות המתקדמות באתר כדי לבצע את המחיקה.',
+      [
+        { text: 'ביטול', style: 'cancel' },
+        {
+          text: 'המשך למחיקה',
+          style: 'destructive',
+          onPress: () => {
+            if (currentStore?.slug) {
+              Linking.openURL(`https://${QUICKSHOP_DOMAIN}/shops/${currentStore.slug}/admin/settings/advanced`);
+            } else {
+              Linking.openURL(`https://${QUICKSHOP_DOMAIN}/settings/advanced`);
+            }
+          },
+        },
+      ]
+    );
   };
 
   const appVersion = Constants.expoConfig?.version || '1.0.0';
@@ -118,45 +169,45 @@ export default function MoreScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* Current Store */}
-        <Card style={styles.storeCard}>
-          <View style={styles.storeHeader}>
+        <View style={styles.storeCard}>
+          <View style={styles.storeContent}>
             <View style={styles.storeLogo}>
-              <Text style={{ fontSize: 24, color: colors.white }}>
+              <Text style={styles.storeLogoText}>
                 {currentStore?.name.charAt(0) || '?'}
               </Text>
             </View>
             <View style={styles.storeInfo}>
-              <Text weight="bold" size="lg">
-                {currentStore?.name || 'החנות שלי'}
-              </Text>
-              <Text color="secondary" size="sm">
-                {currentStore?.slug}.quickshop.co.il
-              </Text>
+              <Text style={styles.storeName}>{currentStore?.name || 'החנות שלי'}</Text>
+              <Text style={styles.storeUrl}>{currentStore?.slug}.quickshop.co.il</Text>
             </View>
           </View>
-        </Card>
+        </View>
 
         {/* Management */}
         <MenuSection title="ניהול">
+          {activePlugins.includes('pos') && (
+            <MenuItem
+              icon="card-outline"
+              title="קופה (POS)"
+              subtitle="מכירה ישירה"
+              onPress={() => router.push('/(tabs)/pos')}
+            />
+          )}
           <MenuItem
             icon="pricetag-outline"
             title="קופונים והנחות"
-            onPress={() => Alert.alert('בקרוב', 'תכונה זו תהיה זמינה בקרוב')}
+            onPress={() => router.push('/(tabs)/discounts')}
           />
           <MenuItem
             icon="stats-chart-outline"
             title="דוחות ואנליטיקס"
-            onPress={() => Alert.alert('בקרוב', 'תכונה זו תהיה זמינה בקרוב')}
+            onPress={() => router.push('/(tabs)/analytics')}
           />
           <MenuItem
             icon="refresh-outline"
             title="החזרות והחלפות"
-            onPress={() => Alert.alert('בקרוב', 'תכונה זו תהיה זמינה בקרוב')}
-          />
-          <MenuItem
-            icon="star-outline"
-            title="משפיענים"
-            onPress={() => Alert.alert('בקרוב', 'תכונה זו תהיה זמינה בקרוב')}
+            subtitle="ניהול מתקדם דרך האתר"
+            onPress={() => Linking.openURL(`https://${QUICKSHOP_DOMAIN}/shops/${currentStore?.slug}/admin/returns`)}
           />
         </MenuSection>
 
@@ -165,13 +216,14 @@ export default function MoreScreen() {
           <MenuItem
             icon="settings-outline"
             title="הגדרות חנות"
-            subtitle="לניהול מתקדם עבור לאתר"
-            onPress={handleOpenWebDashboard}
+            subtitle="ניהול מתקדם דרך האתר"
+            onPress={handleOpenStoreSettings}
           />
           <MenuItem
             icon="notifications-outline"
-            title="הגדרות התראות"
-            onPress={() => Alert.alert('בקרוב', 'תכונה זו תהיה זמינה בקרוב')}
+            title="התראות"
+            subtitle="הזמנות, מלאי, החזרות"
+            onPress={() => router.push('/(tabs)/notifications')}
           />
           {stores.length > 1 && (
             <MenuItem
@@ -188,13 +240,14 @@ export default function MoreScreen() {
           <MenuItem
             icon="help-circle-outline"
             title="מרכז עזרה"
-            onPress={() => Linking.openURL('https://quickshop.co.il/help')}
+            subtitle="ניהול מתקדם דרך האתר"
+            onPress={handleOpenHelp}
           />
           <MenuItem
             icon="chatbubble-outline"
             title="צור קשר"
-            subtitle="support@quickshop.co.il"
-            onPress={handleSupport}
+            subtitle="מייל או וואטסאפ"
+            onPress={() => setShowContactModal(true)}
           />
         </MenuSection>
 
@@ -204,32 +257,74 @@ export default function MoreScreen() {
             icon="person-outline"
             title={user?.name || 'המשתמש שלי'}
             subtitle={user?.email}
-            onPress={() => {}}
+            onPress={() => { }}
           />
-          <TouchableOpacity
-            style={[styles.menuItem, styles.logoutItem]}
+          <MenuItem
+            icon="trash-outline"
+            title="מחיקת חשבון"
+            subtitle="מחיקה דרך הגדרות האתר"
+            onPress={handleDeleteAccount}
+            destructive
+          />
+          <MenuItem
+            icon="log-out-outline"
+            title={isLoggingOut ? 'מתנתק...' : 'התנתקות'}
             onPress={handleLogout}
-            disabled={isLoggingOut}
-          >
-            <Ionicons name="log-out-outline" size={20} color={colors.error} style={styles.menuIcon} />
-            <View style={styles.menuContent}>
-              <Text weight="medium" color="error">
-                {isLoggingOut ? 'מתנתק...' : 'התנתקות'}
-              </Text>
-            </View>
-          </TouchableOpacity>
+            destructive
+          />
         </MenuSection>
 
         {/* Version */}
         <View style={styles.versionContainer}>
-          <Text color="muted" size="sm" center>
-            QuickShop Mobile v{appVersion}
-          </Text>
-          <Text color="muted" size="xs" center style={{ marginTop: spacing[1] }}>
-            © 2026 QuickShop. כל הזכויות שמורות.
-          </Text>
+          <Text style={styles.versionText}>QuickShop v{appVersion}</Text>
         </View>
       </ScrollView>
+
+      {/* Contact Modal */}
+      <Modal
+        visible={showContactModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowContactModal(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowContactModal(false)}
+        >
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>צור קשר</Text>
+            <Text style={styles.modalSubtitle}>בחר את הדרך הנוחה לך</Text>
+
+            <TouchableOpacity style={styles.contactOption} onPress={handleContactWhatsApp}>
+              <View style={[styles.contactIconContainer, { backgroundColor: '#25D36615' }]}>
+                <Ionicons name="logo-whatsapp" size={24} color="#25D366" />
+              </View>
+              <View style={styles.contactInfo}>
+                <Text style={styles.contactTitle}>וואטסאפ</Text>
+                <Text style={styles.contactDetail}>מענה מהיר</Text>
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.contactOption} onPress={handleContactEmail}>
+              <View style={[styles.contactIconContainer, { backgroundColor: dt.colors.brand[50] }]}>
+                <Ionicons name="mail-outline" size={24} color={dt.colors.brand[500]} />
+              </View>
+              <View style={styles.contactInfo}>
+                <Text style={styles.contactTitle}>אימייל</Text>
+                <Text style={styles.contactDetail}>{SUPPORT_EMAIL}</Text>
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.modalCloseBtn}
+              onPress={() => setShowContactModal(false)}
+            >
+              <Text style={styles.modalCloseBtnText}>סגור</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -237,68 +332,188 @@ export default function MoreScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: dt.colors.surface.background,
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    padding: spacing[4],
-    paddingBottom: spacing[10],
+    padding: dt.spacing[4],
+    paddingBottom: dt.spacing[10],
   },
+
+  // Store Card
   storeCard: {
-    marginBottom: spacing[4],
+    backgroundColor: dt.colors.surface.card,
+    borderRadius: dt.radii.lg,
+    borderWidth: 1,
+    borderColor: dt.colors.ink[200],
+    padding: dt.spacing[4],
+    marginBottom: dt.spacing[4],
   },
-  storeHeader: {
-    flexDirection: 'row-reverse',
+  storeContent: {
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: dt.spacing[3],
   },
   storeLogo: {
-    width: 56,
-    height: 56,
-    borderRadius: borderRadius.md,
-    backgroundColor: colors.primary,
+    width: 48,
+    height: 48,
+    borderRadius: dt.radii.lg,
+    backgroundColor: dt.colors.brand[500],
     alignItems: 'center',
     justifyContent: 'center',
   },
+  storeLogoText: {
+    fontSize: 20,
+    fontFamily: fonts.bold,
+    color: '#FFFFFF',
+  },
   storeInfo: {
     flex: 1,
-    marginRight: spacing[3],
+    alignItems: 'flex-start',
   },
+  storeName: {
+    fontSize: 17,
+    fontFamily: fonts.semiBold,
+    color: dt.colors.ink[950],
+    textAlign: 'right',
+  },
+  storeUrl: {
+    fontSize: 13,
+    color: dt.colors.ink[500],
+    marginTop: 2,
+    textAlign: 'right',
+  },
+
+  // Menu Section
   menuSection: {
-    marginBottom: spacing[4],
-  },
-  sectionTitleContainer: {
-    alignItems: 'flex-start', // ב-RTL, flex-end = ימין המסך
-    marginBottom: spacing[2],
+    marginBottom: dt.spacing[4],
   },
   sectionTitle: {
+    fontSize: 13,
+    fontFamily: fonts.medium,
+    color: dt.colors.ink[500],
     textAlign: 'right',
-    marginRight: spacing[2],
+    marginBottom: dt.spacing[2],
+    paddingHorizontal: dt.spacing[1],
+  },
+  menuCard: {
+    backgroundColor: dt.colors.surface.card,
+    borderRadius: dt.radii.lg,
+    borderWidth: 1,
+    borderColor: dt.colors.ink[200],
+    overflow: 'hidden',
   },
   menuItem: {
-    flexDirection: 'row-reverse', // ב-RTL, row = ימין לשמאל (חץ מימין, תוכן, אייקון משמאל)
+    flexDirection: 'row',
     alignItems: 'center',
-    padding: spacing[4],
+    padding: dt.spacing[4],
     borderBottomWidth: 1,
-    borderBottomColor: colors.borderLight,
+    borderBottomColor: dt.colors.ink[100],
+    gap: dt.spacing[3],
   },
-  menuIcon: {
-    marginRight: spacing[3], // ב-RTL, marginRight = שמאל המסך
+  menuIconContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: dt.radii.md,
+    backgroundColor: dt.colors.ink[50],
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   menuContent: {
     flex: 1,
-    alignItems: 'flex-start', // יישור טקסט לימין
+    alignItems: 'flex-start',
   },
-  menuArrow: {
-    fontSize: 16,
+  menuTitle: {
+    fontSize: 15,
+    fontFamily: fonts.medium,
+    color: dt.colors.ink[950],
+    textAlign: 'right',
   },
-  logoutItem: {
-    borderBottomWidth: 0,
+  menuSubtitle: {
+    fontSize: 12,
+    color: dt.colors.ink[500],
+    marginTop: 2,
+    textAlign: 'right',
   },
+
+  // Version
   versionContainer: {
-    marginTop: spacing[4],
-    padding: spacing[4],
+    alignItems: 'center',
+    paddingTop: dt.spacing[4],
+  },
+  versionText: {
+    fontSize: 12,
+    color: dt.colors.ink[400],
+  },
+
+  // Modal
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: dt.spacing[4],
+  },
+  modalContent: {
+    backgroundColor: dt.colors.surface.card,
+    borderRadius: dt.radii.xl,
+    padding: dt.spacing[6],
+    width: '100%',
+    maxWidth: 340,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontFamily: fonts.bold,
+    color: dt.colors.ink[950],
+    textAlign: 'center',
+    marginBottom: dt.spacing[1],
+  },
+  modalSubtitle: {
+    fontSize: 14,
+    color: dt.colors.ink[500],
+    textAlign: 'center',
+    marginBottom: dt.spacing[4],
+  },
+  contactOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: dt.spacing[4],
+    backgroundColor: dt.colors.ink[50],
+    borderRadius: dt.radii.lg,
+    marginBottom: dt.spacing[3],
+    gap: dt.spacing[3],
+  },
+  contactIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: dt.radii.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  contactInfo: {
+    flex: 1,
+    alignItems: 'flex-start',
+  },
+  contactTitle: {
+    fontSize: 16,
+    fontFamily: fonts.semiBold,
+    color: dt.colors.ink[950],
+  },
+  contactDetail: {
+    fontSize: 13,
+    color: dt.colors.ink[500],
+    marginTop: 2,
+  },
+  modalCloseBtn: {
+    paddingVertical: dt.spacing[3],
+    marginTop: dt.spacing[2],
+  },
+  modalCloseBtnText: {
+    fontSize: 15,
+    fontFamily: fonts.medium,
+    color: dt.colors.ink[500],
+    textAlign: 'center',
   },
 });
-
