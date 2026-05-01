@@ -64,6 +64,16 @@ export async function apiClient<T>(
 
     // Handle auth errors
     if (response.status === 401) {
+      // For unauthenticated endpoints (login/refresh), 401 means bad credentials,
+      // not an expired session. Surface the server's actual message.
+      if (skipAuth) {
+        let errorMessage = 'אימייל או סיסמה שגויים';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch {}
+        throw new ApiError(401, errorMessage);
+      }
       await clearAllAuth();
       throw new AuthError('פג תוקף ההתחברות, נא להתחבר מחדש');
     }
@@ -73,9 +83,10 @@ export async function apiClient<T>(
       let errorMessage = 'שגיאה בבקשה לשרת';
       try {
         const errorData = await response.json();
-        errorMessage = errorData.message || errorMessage;
+        console.log('[API Client] Error response:', response.status, JSON.stringify(errorData));
+        errorMessage = errorData.message || errorData.error || errorMessage;
       } catch {
-        // Use default error message
+        console.log('[API Client] Error response (no JSON):', response.status, response.statusText);
       }
       throw new ApiError(response.status, errorMessage);
     }
