@@ -237,6 +237,8 @@ export interface Product {
   // Price range for products with variants (from API)
   minPrice?: number | null;
   maxPrice?: number | null;
+  // Sum of active variants' inventory (only for hasVariants products)
+  variantTotalInventory?: number | null;
 }
 
 export interface ProductsListParams {
