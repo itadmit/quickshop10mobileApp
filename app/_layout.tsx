@@ -127,7 +127,7 @@ function PulsingDots() {
 export default function RootLayout() {
   const [appReady, setAppReady] = useState(false);
   const [splashDone, setSplashDone] = useState(false);
-  const [otaPhase, setOtaPhase] = useState<OtaPhase>('idle');
+  const [otaPhase, setOtaPhase] = useState<OtaPhase>(__DEV__ ? 'idle' : 'checking');
   const splashOpacity = useRef(new Animated.Value(1)).current;
   const initialize = useAuthStore((s) => s.initialize);
   const isLoading = useAuthStore((s) => s.isLoading);
@@ -160,18 +160,28 @@ export default function RootLayout() {
     if (__DEV__) return;
     let cancelled = false;
 
+    const safety = setTimeout(() => {
+      if (!cancelled) setOtaPhase('idle');
+    }, 8000);
+
     (async () => {
       try {
-        if (!Updates.isEnabled) return;
+        if (!Updates.isEnabled) {
+          if (!cancelled) setOtaPhase('idle');
+          return;
+        }
         const { isAvailable } = await Updates.checkForUpdateAsync();
-        if (cancelled || !isAvailable) return;
-        setOtaPhase('available');
+        if (cancelled) return;
+        setOtaPhase(isAvailable ? 'available' : 'idle');
       } catch {
-        setOtaPhase('idle');
+        if (!cancelled) setOtaPhase('idle');
+      } finally {
+        clearTimeout(safety);
       }
     })();
     return () => {
       cancelled = true;
+      clearTimeout(safety);
     };
   }, []);
 
@@ -291,7 +301,7 @@ export default function RootLayout() {
         <ToastContainer />
         {!splashDone && (
           <Animated.View
-            pointerEvents={otaPhase === 'available' ? 'auto' : 'none'}
+            pointerEvents="none"
             style={[
               StyleSheet.absoluteFill,
               otaStyles.splashContainer,
@@ -313,10 +323,22 @@ export default function RootLayout() {
                 {otaPhase === 'downloading' && <AnimatedProgressBar />}
               </View>
             )}
-            {otaPhase === 'available' && (
-              <UpdatePromptModal onUpdate={handleApplyUpdate} onLater={handleDismissUpdate} />
-            )}
           </Animated.View>
+        )}
+        {otaPhase === 'available' && (
+          <UpdatePromptModal onUpdate={handleApplyUpdate} onLater={handleDismissUpdate} />
+        )}
+        {(otaPhase === 'downloading' || otaPhase === 'installing') && splashDone && (
+          <View style={otaStyles.applyOverlay}>
+            <View style={otaStyles.updateBox}>
+              <ActivityIndicator size="small" color="#008060" />
+              <RNText style={otaStyles.updateTitle}>
+                {otaPhase === 'downloading' && 'מוריד עדכונים...'}
+                {otaPhase === 'installing' && 'מתקין, רגע...'}
+              </RNText>
+              {otaPhase === 'downloading' && <AnimatedProgressBar />}
+            </View>
+          </View>
         )}
       </GestureHandlerRootView>
     </QueryClientProvider>
@@ -365,6 +387,12 @@ const otaStyles = StyleSheet.create({
     height: '100%',
     borderRadius: 3,
     backgroundColor: '#008060',
+  },
+  applyOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   modalBackdrop: {
     ...StyleSheet.absoluteFillObject,
