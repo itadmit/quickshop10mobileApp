@@ -6,6 +6,7 @@ export * from './Input';
 export * from './Badge';
 export * from './Banner';
 export * from './Toggle';
+export * from './Sparkline';
 export * from './EmptyState';
 export * from './LoadingScreen';
 export * from './Skeleton';

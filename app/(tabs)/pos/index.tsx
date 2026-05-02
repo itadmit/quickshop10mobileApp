@@ -29,7 +29,7 @@ import {
   usePOSCustomerSearch,
   useValidateCoupon,
 } from '@/hooks';
-import { Text, SearchBar, FilterTabs, POSGridSkeleton, designTokens, fonts } from '@/components/ui';
+import { Text, SearchBar, FilterTabs, POSGridSkeleton, Banner, designTokens, fonts } from '@/components/ui';
 import { formatCurrency } from '@/lib/utils/format';
 import { hapticLight, hapticSuccess, hapticWarning } from '@/lib/utils/haptics';
 import { showToast } from '@/lib/utils/toast';
@@ -548,15 +548,11 @@ export default function POSScreen() {
 
           {/* Error State */}
           {productsError && (
-            <View style={styles.errorBanner}>
-              <Ionicons
-                name="alert-circle-outline"
-                size={18}
-                color={designTokens.colors.semantic.danger.DEFAULT}
+            <View style={{ marginHorizontal: dt.spacing[4], marginTop: dt.spacing[2] }}>
+              <Banner
+                variant="danger"
+                message={(productsError as Error)?.message || 'שגיאה בטעינת מוצרים'}
               />
-              <Text style={styles.errorBannerText}>
-                {(productsError as Error)?.message || 'שגיאה בטעינת מוצרים'}
-              </Text>
             </View>
           )}
 

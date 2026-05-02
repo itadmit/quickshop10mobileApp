@@ -132,6 +132,13 @@ export default function DashboardScreen() {
   const hasAlerts = pendingCount > 0 || lowStockCount > 0 || outOfStockCount > 0 || waitingForShipmentCount > 0;
   const topProducts = summary?.topProducts || [];
   const revenueChart = summary?.revenueChart || [];
+  const ordersSeries = revenueChart.map((d) => d.orders);
+  const revenueSeries = revenueChart.map((d) => d.revenue);
+  const ordersChange = summary?.orders?.change ?? 0;
+  const ordersTrend =
+    revenueChart.length > 1 && ordersChange !== 0
+      ? { value: Math.round(Math.abs(ordersChange)), isPositive: ordersChange >= 0 }
+      : undefined;
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -247,6 +254,8 @@ export default function DashboardScreen() {
             value={String(ordersCount)}
             icon={<Ionicons name="cart-outline" size={18} color={dt.colors.brand[500]} />}
             accentColor={dt.colors.brand[500]}
+            series={ordersSeries.length > 1 ? ordersSeries : undefined}
+            trend={ordersTrend}
             onPress={() => router.push('/(tabs)/orders')}
           />
           <StatCard
@@ -254,6 +263,7 @@ export default function DashboardScreen() {
             value={formatCurrency(avgOrderValue)}
             icon={<Ionicons name="analytics-outline" size={18} color={dt.colors.accent[500]} />}
             accentColor={dt.colors.accent[500]}
+            series={revenueSeries.length > 1 ? revenueSeries : undefined}
           />
           <StatCard
             label="מוצרים פעילים"
