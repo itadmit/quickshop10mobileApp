@@ -587,7 +587,7 @@ const styles = StyleSheet.create({
     borderBottomColor: designTokens.colors.ink[200],
   },
   creditInfo: {
-    alignItems: 'flex-end',
+    alignItems: 'flex-start',
   },
   creditType: {
     fontSize: 14,

@@ -257,7 +257,7 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
   customerRight: {
-    alignItems: 'flex-end',
+    alignItems: 'flex-start',
     gap: spacing[1],
   },
   customerTotalSpent: {

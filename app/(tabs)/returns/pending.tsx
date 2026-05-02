@@ -227,7 +227,6 @@ const styles = StyleSheet.create({
   },
   itemInfo: {
     flex: 1,
-    alignItems: 'flex-end',
     gap: 2,
   },
   itemName: {
@@ -235,18 +234,25 @@ const styles = StyleSheet.create({
     fontFamily: fonts.medium,
     color: dt.colors.ink[950],
     textAlign: 'right',
+    writingDirection: 'rtl',
   },
   itemVariant: {
     fontSize: 12,
     color: dt.colors.ink[500],
+    textAlign: 'right',
+    writingDirection: 'rtl',
   },
   itemMeta: {
     fontSize: 12,
     color: dt.colors.ink[500],
+    textAlign: 'right',
+    writingDirection: 'rtl',
   },
   itemDate: {
     fontSize: 11,
     color: dt.colors.ink[400],
+    textAlign: 'right',
+    writingDirection: 'rtl',
   },
   actions: {
     flexDirection: 'row',

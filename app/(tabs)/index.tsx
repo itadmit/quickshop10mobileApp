@@ -310,8 +310,14 @@ export default function DashboardScreen() {
           )}
         </ScrollView>
 
-        {/* Sales Chart */}
-        {revenueChart.length > 0 && (
+        {/* Sales Chart — current backend only ships daily data for the
+            current month, so for "year" we fall back to the same month
+            slice and Yogev sees an empty chart with year-sized headline.
+            Hide the chart when the period extends beyond what the chart
+            data actually covers. */}
+        {revenueChart.length > 0 &&
+          revenueChart.some((d) => d.revenue > 0 || d.orders > 0) &&
+          selectedPeriod !== 'year' && (
           <View style={styles.section}>
             <SectionHeader title={`מכירות - ${PERIOD_OPTIONS.find(p => p.key === selectedPeriod)?.label ?? ''}`} />
             <SalesChart data={revenueChart} />

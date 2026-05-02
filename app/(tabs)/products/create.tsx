@@ -1006,7 +1006,7 @@ const styles = StyleSheet.create({
   },
   toggleInfo: {
     flex: 1,
-    alignItems: 'flex-end',
+    alignItems: 'flex-start',
   },
   toggleTitle: {
     fontSize: 15,

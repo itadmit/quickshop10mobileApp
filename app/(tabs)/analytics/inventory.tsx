@@ -163,8 +163,8 @@ const styles = StyleSheet.create({
   section: { gap: dt.spacing[2] },
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: dt.spacing[3] },
   rowBorder: { borderBottomWidth: 1, borderBottomColor: dt.colors.ink[100] },
-  productInfo: { flex: 1, alignItems: 'flex-end', gap: 2 },
-  productName: { fontSize: 14, fontFamily: fonts.medium, color: dt.colors.ink[950], textAlign: 'right' },
-  productSku: { fontSize: 11, color: dt.colors.ink[500] },
+  productInfo: { flex: 1, gap: 2 },
+  productName: { fontSize: 14, fontFamily: fonts.medium, color: dt.colors.ink[950], textAlign: 'right', writingDirection: 'rtl' },
+  productSku: { fontSize: 11, color: dt.colors.ink[500], textAlign: 'right', writingDirection: 'rtl' },
   invValue: { fontSize: 13, fontFamily: fonts.semiBold, color: dt.colors.semantic.warning.dark },
 });
