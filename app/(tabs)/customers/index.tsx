@@ -1,44 +1,51 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import {
   View,
   FlatList,
   StyleSheet,
   RefreshControl,
-  TextInput,
+  TouchableOpacity,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useInfiniteCustomers } from '@/hooks';
 import {
   Text,
-  Card,
-  Badge,
-  LoadingScreen,
   EmptyState,
-  colors,
-  spacing,
+  SearchBar,
+  CustomerSkeleton,
+  designTokens,
   fonts,
-  borderRadius,
-  shadows,
 } from '@/components/ui';
 import { formatCurrency, formatRelativeDate } from '@/lib/utils/format';
+import { avatarColor } from '@/lib/utils/avatar';
 import type { Customer } from '@/types';
+
+const { colors, spacing, radii } = designTokens;
+// removed monoFont - using fonts.bold for consistency
 
 export default function CustomersListScreen() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchQuery), 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   const {
     data,
     isLoading,
     isFetchingNextPage,
+    isFetching,
     hasNextPage,
     fetchNextPage,
     refetch,
-    isRefetching,
   } = useInfiniteCustomers({
-    search: searchQuery || undefined,
+    search: debouncedSearch || undefined,
     limit: 20,
     sortBy: 'totalSpent',
     sortOrder: 'desc',
@@ -56,29 +63,39 @@ export default function CustomersListScreen() {
     }
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
+  const handleRefresh = useCallback(async () => {
+    setIsRefreshing(true);
+    try {
+      await refetch();
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [refetch]);
+
+  const handleCreatePress = () => {
+    router.push('/(tabs)/customers/create');
+  };
+
   const renderCustomer = useCallback(({ item: customer }: { item: Customer }) => (
     <CustomerCard customer={customer} onPress={() => handleCustomerPress(customer)} />
   ), [handleCustomerPress]);
 
-  if (isLoading) {
-    return <LoadingScreen message="טוען לקוחות..." />;
-  }
+  const showInitialLoading = isLoading && customers.length === 0;
 
   return (
     <SafeAreaView style={styles.container} edges={[]}>
-      {/* Search */}
-      <View style={styles.searchContainer}>
-        <TextInput
-          style={styles.searchInput}
-          placeholder="חפש לפי שם, אימייל או טלפון..."
-          placeholderTextColor={colors.textMuted}
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          returnKeyType="search"
-        />
-      </View>
+      <SearchBar
+        value={searchQuery}
+        onChangeText={setSearchQuery}
+        placeholder="חיפוש לפי שם, אימייל או טלפון..."
+        isLoading={isFetching && !!searchQuery}
+        actions={
+          <TouchableOpacity style={styles.addButton} onPress={handleCreatePress}>
+            <Ionicons name="add" size={22} color="#FFFFFF" />
+          </TouchableOpacity>
+        }
+      />
 
-      {/* Customers List */}
       <FlatList
         data={customers}
         keyExtractor={(item) => item.id}
@@ -86,21 +103,37 @@ export default function CustomersListScreen() {
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={isRefetching} onRefresh={refetch} />
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={handleRefresh}
+            tintColor={colors.brand[500]}
+            colors={[colors.brand[500]]}
+
+          />
         }
         onEndReached={handleLoadMore}
         onEndReachedThreshold={0.5}
         ListEmptyComponent={
-          <EmptyState
-            icon={<Ionicons name="people-outline" size={48} color={colors.textMuted} />}
-            title="אין לקוחות"
-            description={searchQuery ? 'נסה חיפוש אחר' : 'לקוחות שיזמינו יופיעו כאן'}
-          />
+          showInitialLoading ? (
+            <View>
+              {Array.from({ length: 6 }).map((_, i) => (
+                <CustomerSkeleton key={i} />
+              ))}
+            </View>
+          ) : (
+            <EmptyState
+              icon={<Ionicons name="people-outline" size={48} color={colors.brand[500]} />}
+              title="אין לקוחות"
+              description={searchQuery ? 'נסה חיפוש אחר' : 'לקוחות שיזמינו יופיעו כאן'}
+              actionLabel={searchQuery ? undefined : 'הוסף לקוח'}
+              onAction={searchQuery ? undefined : handleCreatePress}
+            />
+          )
         }
         ListFooterComponent={
           isFetchingNextPage && hasNextPage && customers.length > 0 ? (
             <View style={styles.loadingMore}>
-              <Text color="secondary">טוען עוד...</Text>
+              <Text style={styles.loadingText}>טוען עוד...</Text>
             </View>
           ) : <View style={{ height: spacing[4] }} />
         }
@@ -109,130 +142,153 @@ export default function CustomersListScreen() {
   );
 }
 
-// Customer Card Component
 function CustomerCard({ customer, onPress }: { customer: Customer; onPress: () => void }) {
   const fullName = [customer.firstName, customer.lastName].filter(Boolean).join(' ') || 'לקוח ללא שם';
 
   return (
-    <Card onPress={onPress} style={styles.customerCard}>
+    <TouchableOpacity onPress={onPress} style={styles.customerCard} activeOpacity={0.7}>
       <View style={styles.customerContent}>
-        {/* Avatar */}
-        <View style={styles.avatar}>
-          <Ionicons name="person-outline" size={20} color={colors.gray500} />
-        </View>
-
-        {/* Info */}
-        <View style={styles.customerInfo}>
-          <Text weight="semiBold" style={styles.customerName}>{fullName}</Text>
-          <Text color="secondary" size="sm" numberOfLines={1} style={styles.customerEmail}>
-            {customer.email}
+        {/* Avatar — RTL start (physical right) */}
+        <View style={[styles.avatar, { backgroundColor: avatarColor(fullName) }]}>
+          <Text style={styles.avatarText}>
+            {fullName.charAt(0).toUpperCase()}
           </Text>
-          <View style={styles.customerMeta}>
-            <Text color="muted" size="xs" style={styles.metaText}>
-              {formatCurrency(customer.totalSpent)} סה"כ
-            </Text>
-            <Text color="muted" size="xs">•</Text>
-            <Text color="muted" size="xs" style={styles.metaText}>
-              {customer.totalOrders} הזמנות
-            </Text>
-          </View>
         </View>
 
-        {/* Right Side */}
-        <View style={styles.customerLeft}>
+        {/* Customer info */}
+        <View style={styles.customerInfo}>
+          <Text style={styles.customerName}>{fullName}</Text>
+          <Text style={styles.customerEmail} numberOfLines={1}>{customer.email}</Text>
+          <Text style={styles.customerMeta}>
+            {customer.totalOrders} הזמנות
+            {customer.lastOrderAt && ` ${'\u00B7'} ${formatRelativeDate(customer.lastOrderAt)}`}
+          </Text>
+        </View>
+
+        {/* Spending + credit */}
+        <View style={styles.customerRight}>
+          <Text style={styles.customerTotalSpent}>{formatCurrency(customer.totalSpent)}</Text>
           {customer.creditBalance > 0 && (
-            <Badge variant="success" size="sm">
-              קרדיט {formatCurrency(customer.creditBalance)}
-            </Badge>
-          )}
-          {customer.lastOrderAt && (
-            <Text color="muted" size="xs" style={styles.lastOrderText}>
-              {formatRelativeDate(customer.lastOrderAt)}
-            </Text>
+            <View style={styles.creditBadge}>
+              <Text style={styles.creditText}>קרדיט {formatCurrency(customer.creditBalance)}</Text>
+            </View>
           )}
         </View>
+
+        {/* Chevron — RTL end (physical left) */}
+        <Ionicons name="chevron-back" size={16} color={colors.ink[300]} />
       </View>
-    </Card>
+    </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F6F6F7',
+    backgroundColor: colors.surface.background,
   },
-  searchContainer: {
-    paddingHorizontal: spacing[4],
-    paddingVertical: spacing[2],
+
+  // Add button
+  addButton: {
+    width: 44,
+    height: 44,
+    borderRadius: radii.md,
+    backgroundColor: colors.brand[500],
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  searchInput: {
-    backgroundColor: colors.white,
-    borderRadius: borderRadius.xl,
-    paddingHorizontal: spacing[4],
-    paddingVertical: spacing[3],
-    fontFamily: fonts.regular,
-    fontSize: 16,
-    textAlign: 'right',
-    borderWidth: 1,
-    borderColor: '#E1E3E5',
-    ...shadows.sm,
-  },
+
+  // List
   listContent: {
     padding: spacing[4],
   },
+
+  // Customer Card
   customerCard: {
     marginBottom: spacing[3],
-    borderRadius: borderRadius.xl,
+    borderRadius: radii.lg,
+    backgroundColor: colors.surface.card,
     borderWidth: 1,
-    borderColor: '#E1E3E5',
-    backgroundColor: colors.white,
-    ...shadows.sm,
-    padding: spacing[3],
+    borderColor: colors.ink[200],
+    padding: spacing[4],
   },
   customerContent: {
-    flexDirection: 'row', // ב-RTL, row = ימין לשמאל
+    flexDirection: 'row',
     alignItems: 'center',
     gap: spacing[3],
   },
   avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#F6F6F7',
+    width: 44,
+    height: 44,
+    borderRadius: radii.full,
     alignItems: 'center',
     justifyContent: 'center',
   },
+  avatarText: {
+    fontSize: 18,
+    fontFamily: fonts.bold,
+    color: '#FFFFFF',
+  },
   customerInfo: {
     flex: 1,
-    alignItems: 'flex-start', // יישור לימין
-  },
-  customerMeta: {
-    flexDirection: 'row', // ב-RTL, row = ימין לשמאל
-    alignItems: 'center',
-    gap: spacing[2],
-    marginTop: spacing[1],
-  },
-  customerLeft: {
-    alignItems: 'flex-start', // ב-RTL עם row, flex-start = שמאל המסך
+    alignItems: 'flex-start',
   },
   customerName: {
+    fontSize: 15,
+    fontFamily: fonts.semiBold,
+    color: colors.ink[950],
+    writingDirection: 'rtl',
     textAlign: 'right',
-    fontSize: 14,
-    color: '#202223',
   },
   customerEmail: {
+    fontSize: 13,
+    fontFamily: fonts.regular,
+    color: colors.ink[500],
+    marginTop: 2,
+    writingDirection: 'rtl',
     textAlign: 'right',
   },
-  metaText: {
+  customerMeta: {
+    fontSize: 13,
+    fontFamily: fonts.regular,
+    color: colors.ink[400],
+    marginTop: 2,
+    writingDirection: 'rtl',
     textAlign: 'right',
   },
-  lastOrderText: {
-    marginTop: spacing[1],
-    textAlign: 'left',
+  customerRight: {
+    alignItems: 'flex-end',
+    gap: spacing[1],
   },
+  customerTotalSpent: {
+    fontSize: 15,
+    fontFamily: fonts.bold,
+    color: colors.ink[950],
+  },
+  creditBadge: {
+    backgroundColor: colors.semantic.success.light,
+    paddingHorizontal: spacing[2],
+    paddingVertical: 3,
+    borderRadius: radii.full,
+  },
+  creditText: {
+    fontSize: 12,
+    fontFamily: fonts.medium,
+    color: colors.semantic.success.dark,
+    writingDirection: 'rtl',
+    textAlign: 'right',
+  },
+
+  // Loading
   loadingMore: {
     padding: spacing[4],
     alignItems: 'center',
   },
+  loadingText: {
+    fontSize: 13,
+    color: colors.ink[400],
+    fontFamily: fonts.regular,
+    writingDirection: 'rtl',
+    textAlign: 'right',
+  },
 });
-

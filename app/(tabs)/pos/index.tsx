@@ -29,7 +29,7 @@ import {
   usePOSCustomerSearch,
   useValidateCoupon,
 } from '@/hooks';
-import { Text, SearchBar, FilterTabs, designTokens, fonts } from '@/components/ui';
+import { Text, SearchBar, FilterTabs, POSGridSkeleton, designTokens, fonts } from '@/components/ui';
 import { formatCurrency } from '@/lib/utils/format';
 import { hapticLight, hapticSuccess, hapticWarning } from '@/lib/utils/haptics';
 import { showToast } from '@/lib/utils/toast';
@@ -105,7 +105,7 @@ function BottomSheet({
         <Animated.View
           style={[
             StyleSheet.absoluteFill,
-            { backgroundColor: 'rgba(0,0,0,0.4)', opacity: fadeAnim },
+            { backgroundColor: dt.colors.overlay.scrim, opacity: fadeAnim },
           ]}
         >
           <TouchableWithoutFeedback onPress={onClose}>
@@ -465,7 +465,7 @@ export default function POSScreen() {
                 size={16}
                 color={
                   cart.mode === 'sale'
-                    ? '#FFFFFF'
+                    ? dt.colors.surface.onBrand
                     : designTokens.colors.ink[600]
                 }
               />
@@ -490,7 +490,7 @@ export default function POSScreen() {
                 size={16}
                 color={
                   cart.mode === 'exchange'
-                    ? '#FFFFFF'
+                    ? dt.colors.surface.onBrand
                     : designTokens.colors.ink[600]
                 }
               />
@@ -526,7 +526,7 @@ export default function POSScreen() {
                   style={styles.manualBtn}
                   onPress={() => setManualItemModal(true)}
                 >
-                  <Ionicons name="create-outline" size={20} color="#FFFFFF" />
+                  <Ionicons name="create-outline" size={20} color={dt.colors.surface.onBrand} />
                 </TouchableOpacity>
               </>
             }
@@ -563,10 +563,10 @@ export default function POSScreen() {
           {/* Product Grid */}
           <View style={styles.productsGrid}>
             {productsLoading ? (
-              <ActivityIndicator
-                size="small"
-                color={designTokens.colors.brand[500]}
-                style={{ padding: designTokens.spacing[4] }}
+              <POSGridSkeleton
+                tileWidth={tileWidth}
+                columns={gridColumns}
+                rows={4}
               />
             ) : products.length === 0 && !productsError ? (
               <View style={styles.emptyProducts}>
@@ -655,7 +655,7 @@ export default function POSScreen() {
                       )}
                       {cart.mode === 'exchange' && (
                         <View style={styles.returnBadge}>
-                          <Ionicons name="return-down-back" size={10} color="#FFFFFF" />
+                          <Ionicons name="return-down-back" size={10} color={dt.colors.surface.onBrand} />
                         </View>
                       )}
                     </TouchableOpacity>
@@ -1001,7 +1001,7 @@ export default function POSScreen() {
                   disabled={validateCoupon.isPending || !couponInput.trim()}
                 >
                   {validateCoupon.isPending ? (
-                    <ActivityIndicator size="small" color="#FFFFFF" />
+                    <ActivityIndicator size="small" color={dt.colors.surface.onBrand} />
                   ) : (
                     <Text style={styles.couponApplyText}>הפעל</Text>
                   )}
@@ -1050,7 +1050,7 @@ export default function POSScreen() {
                     }}
                   >
                     {isPartialPayment && (
-                      <Ionicons name="checkmark" size={14} color="#FFFFFF" />
+                      <Ionicons name="checkmark" size={14} color={dt.colors.surface.onBrand} />
                     )}
                   </TouchableOpacity>
                 </View>
@@ -1095,7 +1095,7 @@ export default function POSScreen() {
                   onPress={() => cart.setMarkAsPaid(!cart.markAsPaid)}
                 >
                   {cart.markAsPaid && (
-                    <Ionicons name="checkmark" size={14} color="#FFFFFF" />
+                    <Ionicons name="checkmark" size={14} color={dt.colors.surface.onBrand} />
                   )}
                 </TouchableOpacity>
               </View>
@@ -1119,7 +1119,7 @@ export default function POSScreen() {
               <>
                 <View style={styles.summaryRow}>
                   <Text style={styles.summaryLabel}>זיכוי (החזרות)</Text>
-                  <Text style={[styles.summaryValue, { color: '#EA580C' }]}>
+                  <Text style={[styles.summaryValue, { color: dt.colors.semantic.return.DEFAULT }]}>
                     {formatCurrency(cart.returnTotal)}
                   </Text>
                 </View>
@@ -1169,7 +1169,7 @@ export default function POSScreen() {
               <Text
                 style={[
                   styles.totalValue,
-                  cart.total < 0 && { color: '#EA580C' },
+                  cart.total < 0 && { color: dt.colors.semantic.return.DEFAULT },
                 ]}
               >
                 {formatCurrency(Math.abs(cart.total))}
@@ -1190,13 +1190,13 @@ export default function POSScreen() {
             activeOpacity={0.8}
           >
             {createOrder.isPending ? (
-              <ActivityIndicator color="#FFFFFF" />
+              <ActivityIndicator color={dt.colors.surface.onBrand} />
             ) : cart.mode === 'exchange' ? (
               <>
                 <Ionicons
                   name="swap-horizontal-outline"
                   size={20}
-                  color="#FFFFFF"
+                  color={dt.colors.surface.onBrand}
                 />
                 <Text style={styles.checkoutBtnText}>
                   {cart.total <= 0
@@ -1206,14 +1206,14 @@ export default function POSScreen() {
               </>
             ) : isPartialPayment && parseFloat(partialPaymentAmount) > 0 ? (
               <>
-                <Ionicons name="card-outline" size={20} color="#FFFFFF" />
+                <Ionicons name="card-outline" size={20} color={dt.colors.surface.onBrand} />
                 <Text style={styles.checkoutBtnText}>
                   תשלום חלקי • {formatCurrency(parseFloat(partialPaymentAmount))}
                 </Text>
               </>
             ) : (
               <>
-                <Ionicons name="card-outline" size={20} color="#FFFFFF" />
+                <Ionicons name="card-outline" size={20} color={dt.colors.surface.onBrand} />
                 <Text style={styles.checkoutBtnText}>
                   {cart.markAsPaid ? 'סגור הזמנה' : 'המשך לתשלום'} •{' '}
                   {formatCurrency(cart.total)}
@@ -1267,7 +1267,7 @@ export default function POSScreen() {
                       <Text style={[
                         styles.variantStock,
                         variantOut && { color: designTokens.colors.semantic.danger.DEFAULT },
-                        variantLow && { color: '#EA580C' },
+                        variantLow && { color: dt.colors.semantic.return.DEFAULT },
                         !variantOut && !variantLow && { color: designTokens.colors.semantic.success.DEFAULT },
                       ]}>
                         {variantOut ? 'אזל מהמלאי' : variantLow ? `נותרו ${variant.inventory}` : `${variant.inventory} במלאי`}
@@ -1281,7 +1281,7 @@ export default function POSScreen() {
                     {variant.price ? formatCurrency(variant.price) : '—'}
                   </Text>
                   {cart.mode === 'exchange' && (
-                    <Ionicons name="return-down-back" size={16} color="#EA580C" />
+                    <Ionicons name="return-down-back" size={16} color={dt.colors.semantic.return.DEFAULT} />
                   )}
                 </TouchableOpacity>
               );
@@ -1500,7 +1500,7 @@ export default function POSScreen() {
               onPress={() => setScannerOpen(false)}
               style={styles.scannerCloseBtn}
             >
-              <Ionicons name="close" size={28} color="#FFFFFF" />
+              <Ionicons name="close" size={28} color={dt.colors.surface.onBrand} />
             </TouchableOpacity>
             <Text style={styles.scannerTitle}>סרוק ברקוד</Text>
             <View style={{ width: 44 }} />
@@ -1563,7 +1563,7 @@ const styles = StyleSheet.create({
     backgroundColor: dt.colors.brand[500],
   },
   modeBtnExchange: {
-    backgroundColor: '#EA580C',
+    backgroundColor: dt.colors.semantic.return.DEFAULT,
   },
   modeBtnText: {
     fontSize: 14,
@@ -1571,7 +1571,7 @@ const styles = StyleSheet.create({
     color: dt.colors.ink[600],
   },
   modeBtnTextActive: {
-    color: '#FFFFFF',
+    color: dt.colors.surface.onBrand,
   },
 
   // Search action buttons
@@ -1602,7 +1602,7 @@ const styles = StyleSheet.create({
     marginHorizontal: dt.spacing[4],
     marginTop: dt.spacing[2],
     padding: dt.spacing[3],
-    backgroundColor: '#FEF2F2',
+    backgroundColor: dt.colors.semantic.danger.light,
     borderRadius: dt.radii.lg,
     borderWidth: 1,
     borderColor: '#FECACA',
@@ -1611,7 +1611,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 13,
     fontFamily: fonts.medium,
-    color: '#991B1B',
+    color: dt.colors.semantic.danger.dark,
     textAlign: 'right',
   },
 
@@ -1637,7 +1637,7 @@ const styles = StyleSheet.create({
   },
   productTileExchange: {
     borderColor: '#FDBA74',
-    backgroundColor: '#FFF7ED',
+    backgroundColor: dt.colors.semantic.return.light,
   },
   productTileDisabled: {
     opacity: 0.55,
@@ -1678,14 +1678,14 @@ const styles = StyleSheet.create({
     color: dt.colors.semantic.danger.DEFAULT,
   },
   stockLabelLow: {
-    color: '#EA580C',
+    color: dt.colors.semantic.return.DEFAULT,
   },
   stockLabelOk: {
     color: dt.colors.semantic.success.DEFAULT,
   },
   outOfStockOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(255,255,255,0.6)',
+    backgroundColor: 'rgba(255, 255, 255, 0.6)',
     borderRadius: dt.radii.sm,
     alignItems: 'center',
     justifyContent: 'center',
@@ -1722,7 +1722,7 @@ const styles = StyleSheet.create({
     width: 18,
     height: 18,
     borderRadius: 9,
-    backgroundColor: '#EA580C',
+    backgroundColor: dt.colors.semantic.return.DEFAULT,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1780,7 +1780,7 @@ const styles = StyleSheet.create({
     borderTopColor: dt.colors.ink[100],
   },
   cartItemReturn: {
-    backgroundColor: '#FFF7ED',
+    backgroundColor: dt.colors.semantic.return.light,
     borderRadius: dt.radii.md,
     marginHorizontal: -dt.spacing[1],
     paddingHorizontal: dt.spacing[1],
@@ -1806,7 +1806,7 @@ const styles = StyleSheet.create({
     color: dt.colors.ink[950],
   },
   cartItemReturnText: {
-    color: '#EA580C',
+    color: dt.colors.semantic.return.DEFAULT,
   },
   cartDeleteBtn: {
     minWidth: 44,
@@ -1835,7 +1835,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   returnTag: {
-    backgroundColor: '#EA580C',
+    backgroundColor: dt.colors.semantic.return.DEFAULT,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: dt.radii.sm,
@@ -1843,7 +1843,7 @@ const styles = StyleSheet.create({
   returnTagText: {
     fontSize: 9,
     fontFamily: fonts.bold,
-    color: '#FFFFFF',
+    color: dt.colors.surface.onBrand,
   },
 
   // Customer
@@ -1938,7 +1938,7 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
   toggleTextActive: {
-    color: '#FFFFFF',
+    color: dt.colors.surface.onBrand,
   },
   checkbox: {
     width: 24,
@@ -2028,13 +2028,13 @@ const styles = StyleSheet.create({
   couponApplyText: {
     fontSize: 14,
     fontFamily: fonts.bold,
-    color: '#FFFFFF',
+    color: dt.colors.surface.onBrand,
   },
   appliedCoupon: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: dt.spacing[2],
-    backgroundColor: '#F0FDF4',
+    backgroundColor: dt.colors.semantic.success.light,
     borderRadius: dt.radii.md,
     borderWidth: 1,
     borderColor: '#BBF7D0',
@@ -2045,7 +2045,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 13,
     fontFamily: fonts.medium,
-    color: '#166534',
+    color: dt.colors.semantic.success.dark,
     textAlign: 'right',
   },
 
@@ -2053,7 +2053,7 @@ const styles = StyleSheet.create({
     marginBottom: dt.spacing[2],
   },
   partialInputWrap: {
-    backgroundColor: '#EFF6FF',
+    backgroundColor: dt.colors.semantic.info.light,
     borderRadius: dt.radii.md,
     borderWidth: 1,
     borderColor: '#BFDBFE',
@@ -2061,7 +2061,7 @@ const styles = StyleSheet.create({
     marginTop: dt.spacing[2],
   },
   partialInput: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: dt.colors.surface.onBrand,
     borderRadius: dt.radii.md,
     borderWidth: 1,
     borderColor: '#93C5FD',
@@ -2074,7 +2074,7 @@ const styles = StyleSheet.create({
   partialHint: {
     fontSize: 11,
     fontFamily: fonts.regular,
-    color: '#1E40AF',
+    color: dt.colors.semantic.info.dark,
     marginTop: dt.spacing[1],
     textAlign: 'left',
     writingDirection: 'rtl',
@@ -2090,12 +2090,12 @@ const styles = StyleSheet.create({
   partialSummaryLabel: {
     fontSize: 12,
     fontFamily: fonts.medium,
-    color: '#1E40AF',
+    color: dt.colors.semantic.info.dark,
   },
   partialSummaryValue: {
     fontSize: 12,
     fontFamily: fonts.medium,
-    color: '#1E40AF',
+    color: dt.colors.semantic.info.dark,
   },
 
   notesInput: {
@@ -2175,7 +2175,7 @@ const styles = StyleSheet.create({
     gap: dt.spacing[2],
     marginHorizontal: dt.spacing[4],
     marginTop: dt.spacing[4],
-    backgroundColor: '#EA580C',
+    backgroundColor: dt.colors.semantic.return.DEFAULT,
     borderRadius: dt.radii.lg,
     paddingVertical: dt.spacing[4],
     minHeight: 56,
@@ -2184,7 +2184,7 @@ const styles = StyleSheet.create({
   checkoutBtnText: {
     fontSize: 16,
     fontFamily: fonts.bold,
-    color: '#FFFFFF',
+    color: dt.colors.surface.onBrand,
     textAlign: 'right',
   },
 
@@ -2239,7 +2239,7 @@ const styles = StyleSheet.create({
   modalSaveBtnText: {
     fontSize: 15,
     fontFamily: fonts.bold,
-    color: '#FFFFFF',
+    color: dt.colors.surface.onBrand,
     textAlign: 'center',
   },
   variantRow: {
@@ -2251,7 +2251,7 @@ const styles = StyleSheet.create({
     minHeight: 56,
   },
   variantRowExchange: {
-    backgroundColor: '#FFF7ED',
+    backgroundColor: dt.colors.semantic.return.light,
     borderRadius: dt.radii.md,
     paddingHorizontal: dt.spacing[2],
     marginBottom: dt.spacing[1],
@@ -2370,7 +2370,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: dt.spacing[3],
-    backgroundColor: '#F0FDF4',
+    backgroundColor: dt.colors.semantic.success.light,
     borderRadius: dt.radii.md,
     borderWidth: 1,
     borderColor: '#BBF7D0',
@@ -2381,14 +2381,14 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#22C55E',
+    backgroundColor: dt.colors.semantic.success.DEFAULT,
     alignItems: 'center',
     justifyContent: 'center',
   },
   selectedCustomerAvatarText: {
     fontSize: 14,
     fontFamily: fonts.bold,
-    color: '#FFFFFF',
+    color: dt.colors.surface.onBrand,
   },
   selectedCustomerName: {
     fontSize: 14,
@@ -2424,7 +2424,7 @@ const styles = StyleSheet.create({
   scannerTitle: {
     fontSize: 17,
     fontFamily: fonts.semiBold,
-    color: '#FFFFFF',
+    color: dt.colors.surface.onBrand,
     textAlign: 'right',
   },
   scannerCloseBtn: {
@@ -2443,6 +2443,6 @@ const styles = StyleSheet.create({
     height: 160,
     borderRadius: dt.radii.lg,
     borderWidth: 3,
-    borderColor: 'rgba(255,255,255,0.6)',
+    borderColor: 'rgba(255, 255, 255, 0.6)',
   },
 });

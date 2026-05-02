@@ -23,6 +23,7 @@ import {
   fonts,
 } from '@/components/ui';
 import { formatCurrency, formatDateTime, formatAddress, formatPhone } from '@/lib/utils/format';
+import { avatarColor } from '@/lib/utils/avatar';
 import type { Order } from '@/types';
 
 const dt = designTokens;
@@ -60,24 +61,6 @@ function getFinancialColor(status: string): string {
   }
 }
 
-// Generate a consistent color from a name string
-function avatarColorFromName(name: string): string {
-  const palette = [
-    dt.colors.brand[500],
-    dt.colors.semantic.success.DEFAULT,
-    dt.colors.semantic.warning.DEFAULT,
-    dt.colors.semantic.info.DEFAULT,
-    '#8B5CF6',
-    '#EC4899',
-    '#14B8A6',
-    '#F59E0B',
-  ];
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) {
-    hash = name.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  return palette[Math.abs(hash) % palette.length];
-}
 
 export default function OrderDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -313,7 +296,7 @@ export default function OrderDetailScreen() {
               <View
                 style={[
                   styles.customerAvatar,
-                  { backgroundColor: avatarColorFromName(order.customerName || '?') },
+                  { backgroundColor: avatarColor(order.customerName || '?') },
                 ]}
               >
                 <Text style={styles.customerAvatarText}>
