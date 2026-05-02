@@ -17,6 +17,7 @@ import {
   Text,
   Button,
   Toggle,
+  ScreenHeader,
   designTokens,
   fonts,
 } from '@/components/ui';
@@ -110,7 +111,8 @@ export default function CreateCustomerScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={[]}>
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <ScreenHeader title="לקוח חדש" />
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}

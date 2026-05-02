@@ -21,6 +21,7 @@ import {
   Text,
   Button,
   Toggle,
+  ScreenHeader,
   designTokens,
   fonts,
 } from '@/components/ui';
@@ -304,7 +305,8 @@ export default function CreateProductScreen() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-    <SafeAreaView style={styles.container} edges={[]}>
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <ScreenHeader title="מוצר חדש" />
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}

@@ -14,6 +14,7 @@ import { useFullAnalytics, useTopProducts } from '@/hooks';
 import {
   Text,
   LoadingScreen,
+  ScreenHeader,
   designTokens,
   fonts,
 } from '@/components/ui';
@@ -89,7 +90,8 @@ export default function AnalyticsScreen() {
   const summary = analytics?.summary;
 
   return (
-    <SafeAreaView style={styles.container} edges={[]}>
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <ScreenHeader title="דוחות ואנליטיקס" />
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}

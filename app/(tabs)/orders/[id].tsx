@@ -19,6 +19,7 @@ import {
   LoadingScreen,
   StatusBadge,
   SectionHeader,
+  ScreenHeader,
   designTokens,
   fonts,
 } from '@/components/ui';
@@ -126,8 +127,12 @@ export default function OrderDetailScreen() {
         style: 'destructive',
         onPress: async () => {
           try {
-            await refundOrder.mutateAsync({ orderId: order.id });
-            showToast('ההחזר בוצע בהצלחה', 'success');
+            const result = await refundOrder.mutateAsync({ orderId: order.id });
+            if (result.success) {
+              showToast('ההחזר בוצע בהצלחה', 'success');
+            } else {
+              showToast('לא הצלחנו לבצע את ההחזר', 'error');
+            }
           } catch {
             showToast('לא הצלחנו לבצע את ההחזר', 'error');
           }
@@ -196,7 +201,8 @@ export default function OrderDetailScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={[]}>
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <ScreenHeader title={`הזמנה #${order.orderNumber}`} />
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}

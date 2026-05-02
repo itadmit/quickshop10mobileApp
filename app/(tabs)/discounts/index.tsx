@@ -16,6 +16,7 @@ import {
   EmptyState,
   Badge,
   FilterTabs,
+  ScreenHeader,
   designTokens,
   fonts,
 } from '@/components/ui';
@@ -89,7 +90,8 @@ export default function DiscountsListScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={[]}>
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <ScreenHeader title="קופונים והנחות" />
       {/* Header Actions */}
       <View style={styles.headerActions}>
         <TouchableOpacity style={styles.addButton} onPress={handleCreatePress}>

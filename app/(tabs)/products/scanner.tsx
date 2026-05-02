@@ -16,6 +16,7 @@ import {
   Button,
   Card,
   LoadingScreen,
+  ScreenHeader,
   spacing,
   fonts,
   designTokens,
@@ -93,7 +94,8 @@ export default function BarcodeScannerScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+      <ScreenHeader title="סריקת ברקוד" />
       {/* Camera View */}
       <View style={styles.cameraContainer}>
         <CameraView

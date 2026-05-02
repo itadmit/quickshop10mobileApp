@@ -26,6 +26,7 @@ import {
   LoadingScreen,
   Badge,
   Button,
+  ScreenHeader,
   spacing,
   fonts,
   designTokens,
@@ -513,7 +514,8 @@ export default function DiscountDetailScreen() {
 
   // -------- View Mode --------
   return (
-    <SafeAreaView style={styles.container} edges={[]}>
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <ScreenHeader title={discount.code || discount.name || 'קופון'} />
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.viewScrollContent}

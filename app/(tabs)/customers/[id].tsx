@@ -19,6 +19,7 @@ import {
   Badge,
   StatusBadge,
   SectionHeader,
+  ScreenHeader,
   LoadingScreen,
   designTokens,
   fonts,
@@ -109,7 +110,8 @@ export default function CustomerDetailScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={[]}>
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <ScreenHeader title={fullName} />
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}

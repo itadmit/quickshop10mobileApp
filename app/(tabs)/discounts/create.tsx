@@ -16,6 +16,7 @@ import { useCreateDiscount, useCategories, useProducts } from '@/hooks';
 import {
   Text,
   Button,
+  ScreenHeader,
   designTokens,
   fonts,
 } from '@/components/ui';
@@ -150,7 +151,8 @@ export default function CreateDiscountScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={[]}>
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <ScreenHeader title="קופון חדש" />
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}

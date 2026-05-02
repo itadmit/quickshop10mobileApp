@@ -38,6 +38,7 @@ import {
   StockBadge,
   LoadingScreen,
   SectionHeader,
+  ScreenHeader,
   designTokens,
   fonts,
 } from '@/components/ui';
@@ -461,7 +462,7 @@ export default function ProductDetailScreen() {
   if (isEditing) {
     return (
       <GestureHandlerRootView style={{ flex: 1 }}>
-      <SafeAreaView style={styles.container} edges={[]}>
+      <SafeAreaView style={styles.container} edges={['top']}>
         <KeyboardAvoidingView
           style={{ flex: 1 }}
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -905,7 +906,8 @@ export default function ProductDetailScreen() {
 
   // -------- View Mode --------
   return (
-    <SafeAreaView style={styles.container} edges={[]}>
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <ScreenHeader title={product.name} />
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}

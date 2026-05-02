@@ -18,6 +18,7 @@ import {
   Text,
   Badge,
   LoadingScreen,
+  ScreenHeader,
   designTokens,
   fonts,
 } from '@/components/ui';
@@ -131,7 +132,8 @@ export default function NotificationsSettingsScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={[]}>
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <ScreenHeader title="התראות" />
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         {/* Permission / token banner */}
         {(noPermission || noToken) && (

@@ -18,6 +18,7 @@ import {
   SearchBar,
   FilterTabs,
   ProductSkeleton,
+  ScreenHeader,
   designTokens,
   fonts,
 } from '@/components/ui';
@@ -152,7 +153,8 @@ export default function ProductsListScreen() {
   }));
 
   return (
-    <SafeAreaView style={styles.container} edges={[]}>
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <ScreenHeader title="מוצרים" onBack={null} />
       <SearchBar
         value={searchQuery}
         onChangeText={setSearchQuery}

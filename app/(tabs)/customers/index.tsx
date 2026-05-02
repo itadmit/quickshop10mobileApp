@@ -15,6 +15,7 @@ import {
   EmptyState,
   SearchBar,
   CustomerSkeleton,
+  ScreenHeader,
   designTokens,
   fonts,
 } from '@/components/ui';
@@ -83,7 +84,8 @@ export default function CustomersListScreen() {
   const showInitialLoading = isLoading && customers.length === 0;
 
   return (
-    <SafeAreaView style={styles.container} edges={[]}>
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <ScreenHeader title="לקוחות" onBack={null} />
       <SearchBar
         value={searchQuery}
         onChangeText={setSearchQuery}

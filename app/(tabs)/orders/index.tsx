@@ -17,6 +17,7 @@ import {
   SearchBar,
   FilterTabs,
   OrderSkeleton,
+  ScreenHeader,
   designTokens,
   fonts,
 } from '@/components/ui';
@@ -170,7 +171,8 @@ export default function OrdersListScreen() {
   const showInitialLoading = isLoading && orders.length === 0;
 
   return (
-    <SafeAreaView style={styles.container} edges={[]}>
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <ScreenHeader title="הזמנות" onBack={null} />
       <SearchBar
         value={searchQuery}
         onChangeText={setSearchQuery}
