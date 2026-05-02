@@ -105,12 +105,14 @@ const styles = StyleSheet.create({
     borderRadius: dt.radii.lg,
     padding: dt.spacing[3],
     justifyContent: 'space-between',
+    alignItems: 'flex-start',
     gap: 6,
   },
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    alignSelf: 'stretch',
   },
   iconCircle: {
     width: 32,
@@ -125,7 +127,6 @@ const styles = StyleSheet.create({
     color: dt.colors.ink[950],
     writingDirection: 'ltr',
     textAlign: 'right',
-    alignSelf: 'stretch',
   },
   footerRow: {
     flexDirection: 'row',

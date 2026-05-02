@@ -131,13 +131,7 @@ export default function DashboardScreen() {
   const waitingForShipmentCount = summary?.waitingForShipment || 0;
   const hasAlerts = pendingCount > 0 || lowStockCount > 0 || outOfStockCount > 0 || waitingForShipmentCount > 0;
   const topProducts = summary?.topProducts || [];
-  const fullRevenueChart = summary?.revenueChart || [];
-  const revenueChart = (() => {
-    if (fullRevenueChart.length === 0) return [];
-    if (selectedPeriod === 'today') return fullRevenueChart.slice(-1);
-    if (selectedPeriod === 'week') return fullRevenueChart.slice(-7);
-    return fullRevenueChart;
-  })();
+  const revenueChart = summary?.revenueChart ?? [];
   const ordersSeries = revenueChart.map((d) => d.orders);
   const revenueSeries = revenueChart.map((d) => d.revenue);
   const ordersChange = summary?.orders?.change ?? 0;
@@ -310,14 +304,10 @@ export default function DashboardScreen() {
           )}
         </ScrollView>
 
-        {/* Sales Chart — current backend only ships daily data for the
-            current month, so for "year" we fall back to the same month
-            slice and Yogev sees an empty chart with year-sized headline.
-            Hide the chart when the period extends beyond what the chart
-            data actually covers. */}
-        {revenueChart.length > 0 &&
-          revenueChart.some((d) => d.revenue > 0 || d.orders > 0) &&
-          selectedPeriod !== 'year' && (
+        {/* Sales Chart — backend now returns period-aware buckets:
+            today/yesterday=hourly (24), week=daily (7), month=daily (30),
+            year=monthly (12), custom=daily. */}
+        {revenueChart.length > 0 && (
           <View style={styles.section}>
             <SectionHeader title={`מכירות - ${PERIOD_OPTIONS.find(p => p.key === selectedPeriod)?.label ?? ''}`} />
             <SalesChart data={revenueChart} />

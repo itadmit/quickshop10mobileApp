@@ -362,10 +362,9 @@ const styles = StyleSheet.create({
     backgroundColor: dt.colors.surface.card,
     borderRadius: dt.radii.lg,
     padding: dt.spacing[5],
+    alignItems: 'flex-start',
     gap: dt.spacing[1],
   },
-  heroCardLabel: { fontSize: 13, color: dt.colors.ink[500], textAlign: 'right' },
-  heroCardValue: { fontSize: 32, fontFamily: fonts.bold, color: dt.colors.ink[950], textAlign: 'right', writingDirection: 'rtl' },
   heroSkeleton: {
     gap: dt.spacing[2],
     padding: dt.spacing[5],
@@ -379,8 +378,8 @@ const styles = StyleSheet.create({
     fontSize: 32,
     fontFamily: fonts.bold,
     color: dt.colors.ink[950],
+    writingDirection: 'ltr',
     textAlign: 'right',
-    writingDirection: 'rtl',
   },
   heroChangeRow: {
     flexDirection: 'row',
