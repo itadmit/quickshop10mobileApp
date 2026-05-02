@@ -79,6 +79,7 @@ function MenuSection({ title, children }: { title?: string; children: React.Reac
       {title && (
         <View style={styles.sectionTitleWrap}>
           <Text style={styles.sectionTitle}>{title}</Text>
+          <View style={styles.sectionTitleSpacer} />
         </View>
       )}
       <View style={styles.menuCard}>{children}</View>
@@ -408,9 +409,13 @@ const styles = StyleSheet.create({
     marginBottom: dt.spacing[4],
   },
   sectionTitleWrap: {
+    flexDirection: 'row',
     width: '100%',
     marginBottom: dt.spacing[2],
     paddingHorizontal: dt.spacing[1],
+  },
+  sectionTitleSpacer: {
+    flex: 1,
   },
   sectionTitle: {
     fontSize: 13,
@@ -418,7 +423,6 @@ const styles = StyleSheet.create({
     color: dt.colors.ink[500],
     textAlign: 'right',
     writingDirection: 'rtl',
-    width: '100%',
   },
   menuCard: {
     backgroundColor: dt.colors.surface.card,
