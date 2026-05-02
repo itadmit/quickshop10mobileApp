@@ -803,8 +803,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: dt.colors.surface.card,
     borderRadius: dt.radii.lg,
-    borderWidth: 1,
-    borderColor: dt.colors.ink[200],
     paddingHorizontal: dt.spacing[4],
     paddingVertical: dt.spacing[3],
     gap: dt.spacing[3],
@@ -842,8 +840,6 @@ const styles = StyleSheet.create({
   },
   quickActionInner: {
     backgroundColor: dt.colors.surface.card,
-    borderWidth: 1,
-    borderColor: dt.colors.ink[200],
     borderRadius: dt.radii.lg,
     padding: dt.spacing[4],
     flexDirection: 'row',
@@ -854,7 +850,6 @@ const styles = StyleSheet.create({
   },
   quickActionInnerPrimary: {
     backgroundColor: dt.colors.brand[500],
-    borderColor: dt.colors.brand[500],
   },
   quickActionIcon: {
     width: 40,
@@ -879,8 +874,6 @@ const styles = StyleSheet.create({
   ordersCard: {
     backgroundColor: dt.colors.surface.card,
     borderRadius: dt.radii.lg,
-    borderWidth: 1,
-    borderColor: dt.colors.ink[200],
     overflow: 'hidden',
   },
   orderRow: {
@@ -938,8 +931,6 @@ const styles = StyleSheet.create({
   chartCard: {
     backgroundColor: dt.colors.surface.card,
     borderRadius: dt.radii.lg,
-    borderWidth: 1,
-    borderColor: dt.colors.ink[200],
     padding: dt.spacing[3],
     overflow: 'hidden',
   },
@@ -1001,8 +992,6 @@ const styles = StyleSheet.create({
   topProductsCard: {
     backgroundColor: dt.colors.surface.card,
     borderRadius: dt.radii.lg,
-    borderWidth: 1,
-    borderColor: dt.colors.ink[200],
     overflow: 'hidden',
   },
   topProductRow: {
@@ -1065,8 +1054,6 @@ const styles = StyleSheet.create({
   emptyCard: {
     backgroundColor: dt.colors.surface.card,
     borderRadius: dt.radii.lg,
-    borderWidth: 1,
-    borderColor: dt.colors.ink[200],
     padding: 40,
     alignItems: 'center',
     gap: 8,

@@ -720,8 +720,6 @@ const styles = StyleSheet.create({
   heroCard: {
     backgroundColor: dt.colors.surface.card,
     borderRadius: dt.radii.lg,
-    borderWidth: 1,
-    borderColor: dt.colors.ink[200],
     padding: spacing[6],
     alignItems: 'center',
     gap: spacing[2],
@@ -777,8 +775,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: dt.colors.surface.card,
     borderRadius: dt.radii.lg,
-    borderWidth: 1,
-    borderColor: dt.colors.ink[200],
     padding: spacing[4],
   },
   toggleCardInfo: {
@@ -830,8 +826,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: dt.colors.surface.card,
     borderRadius: dt.radii.lg,
-    borderWidth: 1,
-    borderColor: dt.colors.ink[200],
     padding: spacing[4],
     alignItems: 'center',
     gap: spacing[1],
@@ -851,8 +845,6 @@ const styles = StyleSheet.create({
   detailsCard: {
     backgroundColor: dt.colors.surface.card,
     borderRadius: dt.radii.lg,
-    borderWidth: 1,
-    borderColor: dt.colors.ink[200],
     padding: spacing[4],
   },
   sectionTitle: {
@@ -888,8 +880,6 @@ const styles = StyleSheet.create({
   actionsCard: {
     backgroundColor: dt.colors.surface.card,
     borderRadius: dt.radii.lg,
-    borderWidth: 1,
-    borderColor: dt.colors.ink[200],
     overflow: 'hidden',
   },
   actionRow: {
@@ -969,9 +959,7 @@ const styles = StyleSheet.create({
   },
   editCard: {
     backgroundColor: dt.colors.surface.card,
-    borderRadius: dt.radii.md,
-    borderWidth: 1,
-    borderColor: dt.colors.ink[200],
+    borderRadius: dt.radii.lg,
     padding: spacing[4],
   },
 

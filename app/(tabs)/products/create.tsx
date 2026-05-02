@@ -865,8 +865,6 @@ const styles = StyleSheet.create({
     backgroundColor: designTokens.colors.surface.card,
     borderRadius: designTokens.radii.lg,
     padding: designTokens.spacing[4],
-    borderWidth: 1,
-    borderColor: designTokens.colors.ink[200],
   },
 
   // Images

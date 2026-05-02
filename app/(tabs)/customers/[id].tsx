@@ -534,8 +534,6 @@ const styles = StyleSheet.create({
     backgroundColor: designTokens.colors.surface.card,
     borderRadius: designTokens.radii.lg,
     overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: designTokens.colors.ink[200],
   },
   orderRow: {
     flexDirection: 'row',
@@ -577,8 +575,6 @@ const styles = StyleSheet.create({
     backgroundColor: designTokens.colors.surface.card,
     borderRadius: designTokens.radii.lg,
     overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: designTokens.colors.ink[200],
   },
   creditRow: {
     flexDirection: 'row',
@@ -611,8 +607,6 @@ const styles = StyleSheet.create({
     backgroundColor: designTokens.colors.ink[50],
     borderRadius: designTokens.radii.lg,
     padding: designTokens.spacing[3],
-    borderWidth: 1,
-    borderColor: designTokens.colors.ink[200],
   },
   notesText: {
     fontSize: 14,

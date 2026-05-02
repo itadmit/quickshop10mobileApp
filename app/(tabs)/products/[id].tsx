@@ -1224,8 +1224,6 @@ const styles = StyleSheet.create({
     backgroundColor: designTokens.colors.surface.card,
     borderRadius: designTokens.radii.lg,
     padding: designTokens.spacing[4],
-    borderWidth: 1,
-    borderColor: designTokens.colors.ink[200],
     alignItems: 'flex-start',
   },
   productName: {
@@ -1291,8 +1289,6 @@ const styles = StyleSheet.create({
     borderRadius: designTokens.radii.lg,
     padding: designTokens.spacing[3],
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: designTokens.colors.ink[200],
   },
   statLabel: {
     fontSize: 12,
@@ -1321,8 +1317,6 @@ const styles = StyleSheet.create({
     backgroundColor: designTokens.colors.surface.card,
     borderRadius: designTokens.radii.lg,
     overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: designTokens.colors.ink[200],
   },
   variantRow: {
     flexDirection: 'row',
@@ -1368,8 +1362,6 @@ const styles = StyleSheet.create({
     backgroundColor: designTokens.colors.surface.card,
     borderRadius: designTokens.radii.lg,
     overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: designTokens.colors.ink[200],
   },
   detailRow: {
     flexDirection: 'row',
@@ -1399,8 +1391,6 @@ const styles = StyleSheet.create({
     backgroundColor: designTokens.colors.surface.card,
     borderRadius: designTokens.radii.lg,
     overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: designTokens.colors.ink[200],
   },
   actionBtn: {
     flexDirection: 'row',
@@ -1477,8 +1467,6 @@ const styles = StyleSheet.create({
     backgroundColor: designTokens.colors.surface.card,
     borderRadius: designTokens.radii.lg,
     padding: designTokens.spacing[4],
-    borderWidth: 1,
-    borderColor: designTokens.colors.ink[200],
   },
 
   // Shared form styles
