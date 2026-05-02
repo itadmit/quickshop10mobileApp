@@ -99,12 +99,9 @@ const styles = StyleSheet.create({
   card: {
     flex: 1,
     backgroundColor: dt.colors.surface.card,
-    borderWidth: 1,
-    borderColor: dt.colors.ink[200],
     borderRadius: dt.radii.lg,
     padding: dt.spacing[3],
     justifyContent: 'space-between',
-    ...dt.shadows.subtle,
   },
   headerRow: {
     flexDirection: 'row',

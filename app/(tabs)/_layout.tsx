@@ -47,7 +47,7 @@ export default function TabsLayout() {
         headerShown: true,
         headerTitleAlign: 'center',
         headerTitleStyle: {
-          fontFamily: fonts.semiBold,
+          fontFamily: fonts.bold,
           fontSize: 17,
           color: dt.colors.ink[950],
         },
@@ -152,6 +152,13 @@ export default function TabsLayout() {
       />
       <Tabs.Screen
         name="notifications"
+        options={{
+          href: null,
+          headerShown: false,
+        }}
+      />
+      <Tabs.Screen
+        name="returns"
         options={{
           href: null,
           headerShown: false,

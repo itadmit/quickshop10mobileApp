@@ -13,6 +13,7 @@ export * from './Skeleton';
 export * from './Toast';
 export * from './StatusBadge';
 export * from './SectionHeader';
+export * from './ScreenHeader';
 export * from './StatCard';
 export * from './SearchBar';
 export * from './FilterTabs';

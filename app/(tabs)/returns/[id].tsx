@@ -17,6 +17,7 @@ import {
   Button,
   Card,
   SectionHeader,
+  ScreenHeader,
   LoadingScreen,
   designTokens,
   fonts,
@@ -116,14 +117,7 @@ export default function ReturnRequestDetailScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} hitSlop={8}>
-          <Ionicons name="chevron-forward" size={22} color={dt.colors.ink[700]} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>בקשה #{request.requestNumber}</Text>
-        <View style={{ width: 22 }} />
-      </View>
+      <ScreenHeader title={`בקשה #${request.requestNumber}`} />
 
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         {/* Status hero */}
@@ -323,18 +317,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: dt.colors.surface.background,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: dt.spacing[4],
-    paddingVertical: dt.spacing[3],
-  },
-  headerTitle: {
-    fontSize: 17,
-    fontFamily: fonts.semiBold,
-    color: dt.colors.ink[950],
   },
   scroll: {
     padding: dt.spacing[4],

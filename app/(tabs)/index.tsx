@@ -131,7 +131,13 @@ export default function DashboardScreen() {
   const waitingForShipmentCount = summary?.waitingForShipment || 0;
   const hasAlerts = pendingCount > 0 || lowStockCount > 0 || outOfStockCount > 0 || waitingForShipmentCount > 0;
   const topProducts = summary?.topProducts || [];
-  const revenueChart = summary?.revenueChart || [];
+  const fullRevenueChart = summary?.revenueChart || [];
+  const revenueChart = (() => {
+    if (fullRevenueChart.length === 0) return [];
+    if (selectedPeriod === 'today') return fullRevenueChart.slice(-1);
+    if (selectedPeriod === 'week') return fullRevenueChart.slice(-7);
+    return fullRevenueChart;
+  })();
   const ordersSeries = revenueChart.map((d) => d.orders);
   const revenueSeries = revenueChart.map((d) => d.revenue);
   const ordersChange = summary?.orders?.change ?? 0;
@@ -302,7 +308,7 @@ export default function DashboardScreen() {
         {/* Sales Chart */}
         {revenueChart.length > 0 && (
           <View style={styles.section}>
-            <SectionHeader title="מכירות - החודש" />
+            <SectionHeader title={`מכירות - ${PERIOD_OPTIONS.find(p => p.key === selectedPeriod)?.label ?? ''}`} />
             <SalesChart data={revenueChart} />
           </View>
         )}

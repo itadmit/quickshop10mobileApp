@@ -13,6 +13,7 @@ import {
   Text,
   EmptyState,
   FilterTabs,
+  ScreenHeader,
   designTokens,
   fonts,
 } from '@/components/ui';
@@ -71,13 +72,7 @@ export default function ReturnsListScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} hitSlop={8}>
-          <Ionicons name="chevron-forward" size={22} color={dt.colors.ink[700]} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>החזרות והחלפות</Text>
-        <View style={{ width: 22 }} />
-      </View>
+      <ScreenHeader title="החזרות והחלפות" />
 
       {/* Pending inventory pill */}
       {pending && pending.pendingCount > 0 && (
@@ -171,23 +166,11 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: dt.colors.surface.background,
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: dt.spacing[4],
-    paddingVertical: dt.spacing[3],
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontFamily: fonts.semiBold,
-    color: dt.colors.ink[950],
-  },
   pendingBanner: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: dt.spacing[2],
-    marginHorizontal: dt.spacing[4],
+    margin: dt.spacing[4],
     marginBottom: dt.spacing[2],
     padding: dt.spacing[3],
     backgroundColor: dt.colors.semantic.warning.light,

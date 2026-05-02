@@ -15,6 +15,7 @@ import {
   Text,
   EmptyState,
   FilterTabs,
+  ScreenHeader,
   designTokens,
   fonts,
 } from '@/components/ui';
@@ -94,13 +95,7 @@ export default function PendingInventoryScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} hitSlop={8}>
-          <Ionicons name="chevron-forward" size={22} color={dt.colors.ink[700]} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>מלאי ממתין לקליטה</Text>
-        <View style={{ width: 22 }} />
-      </View>
+      <ScreenHeader title="מלאי ממתין לקליטה" />
 
       <FilterTabs
         tabs={STATUS_TABS.map((t) => ({ key: t.key, label: t.label }))}
@@ -201,18 +196,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: dt.colors.surface.background,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: dt.spacing[4],
-    paddingVertical: dt.spacing[3],
-  },
-  headerTitle: {
-    fontSize: 17,
-    fontFamily: fonts.semiBold,
-    color: dt.colors.ink[950],
   },
   listContent: {
     padding: dt.spacing[4],
