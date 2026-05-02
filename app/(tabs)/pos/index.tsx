@@ -112,15 +112,21 @@ function BottomSheet({
             <View style={StyleSheet.absoluteFill} />
           </TouchableWithoutFeedback>
         </Animated.View>
-        <Animated.View
-          style={[
-            styles.modalSheet,
-            { transform: [{ translateY: slideAnim }] },
-          ]}
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={styles.modalSheetWrap}
+          pointerEvents="box-none"
         >
-          <View style={styles.modalHandle} />
-          {children}
-        </Animated.View>
+          <Animated.View
+            style={[
+              styles.modalSheet,
+              { transform: [{ translateY: slideAnim }] },
+            ]}
+          >
+            <View style={styles.modalHandle} />
+            {children}
+          </Animated.View>
+        </KeyboardAvoidingView>
       </View>
     </Modal>
   );
@@ -430,7 +436,7 @@ export default function POSScreen() {
     doCheckout();
   }, [cart, doCheckout, isPartialPayment, partialPaymentAmount]);
 
-  const products = productsData?.products || [];
+  const products = (productsData?.products || []).filter((p) => !isProductOutOfStock(p));
   const categories = productsData?.categories || [];
 
   return (
@@ -2183,11 +2189,11 @@ const styles = StyleSheet.create({
   },
 
   // Modal / Bottom Sheet
+  modalSheetWrap: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'flex-end',
+  },
   modalSheet: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
     backgroundColor: dt.colors.surface.card,
     borderTopLeftRadius: dt.radii.xl,
     borderTopRightRadius: dt.radii.xl,
