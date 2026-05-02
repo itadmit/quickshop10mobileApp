@@ -23,6 +23,7 @@ import {
   SectionHeader,
   StatCard,
   DashboardSkeleton,
+  Sparkline,
   fonts,
   designTokens,
 } from '@/components/ui';
@@ -50,6 +51,7 @@ const dt = designTokens;
 export default function DashboardScreen() {
   const router = useRouter();
   const currentStore = useAuthStore((s) => s.currentStore);
+  const user = useAuthStore((s) => s.user);
   const refreshCurrentStore = useAuthStore((s) => s.refreshCurrentStore);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -125,7 +127,16 @@ export default function DashboardScreen() {
   const customersCount = customersData?.stats?.total ?? summary?.customers?.total ?? 0;
   const avgOrderValue = ordersCount > 0 ? totalRevenue / ordersCount : 0;
 
-  const todayFormatted = format(new Date(), "EEEE, d MMMM yyyy", { locale: he });
+  // Time-of-day greeting (Hebrew, with emoji).
+  const greeting = (() => {
+    const h = new Date().getHours();
+    if (h < 12) return { text: 'בוקר טוב', emoji: '☀️' };
+    if (h < 17) return { text: 'צהריים טובים', emoji: '🌤️' };
+    if (h < 21) return { text: 'ערב טוב', emoji: '🌆' };
+    return { text: 'לילה טוב', emoji: '🌙' };
+  })();
+  const firstName = user?.name ? user.name.split(' ')[0] : null;
+  const dayLabel = format(new Date(), 'EEEE, d MMMM', { locale: he });
 
   const outOfStockCount = summary?.products?.outOfStock || 0;
   const waitingForShipmentCount = summary?.waitingForShipment || 0;
@@ -156,12 +167,8 @@ export default function DashboardScreen() {
           />
         }
       >
-        {/* Header */}
+        {/* Header — Shopify-style greeting */}
         <View style={styles.header}>
-          <View style={styles.headerInfo}>
-            <Text style={styles.storeName}>{currentStore?.name || 'החנות שלי'}</Text>
-            <Text style={styles.dateText}>{todayFormatted}</Text>
-          </View>
           <TouchableOpacity
             style={styles.settingsButton}
             onPress={() => router.push('/(tabs)/more')}
@@ -169,76 +176,103 @@ export default function DashboardScreen() {
           >
             <Ionicons name="settings-outline" size={22} color={dt.colors.ink[600]} />
           </TouchableOpacity>
+          <View style={styles.headerInfo}>
+            <Text style={styles.greeting}>
+              {firstName ? `${greeting.text}, ${firstName}` : greeting.text} {greeting.emoji}
+            </Text>
+            <Text style={styles.dateText}>
+              {currentStore?.name ?? 'החנות שלי'} · {dayLabel}
+            </Text>
+          </View>
         </View>
 
         {showSkeleton ? (
           <DashboardSkeleton />
         ) : (
         <>
-        {/* Revenue Hero */}
-        <View style={styles.revenueHero}>
-          <Text style={styles.revenueValue}>
-            {formatCurrency(totalRevenue)}
-          </Text>
-          <View style={styles.revenueLabelRow}>
-            <Text style={styles.revenueLabel}>הכנסות {PERIOD_OPTIONS.find(p => p.key === selectedPeriod)?.label}</Text>
-            {revenueChange !== undefined && (
-              <View
-                style={[
-                  styles.trendContainer,
-                  {
-                    backgroundColor: revenueChange >= 0
-                      ? dt.colors.semantic.success.light
-                      : dt.colors.semantic.danger.light,
-                  },
-                ]}
-              >
-                <Ionicons
-                  name={revenueChange >= 0 ? 'arrow-up' : 'arrow-down'}
-                  size={12}
-                  color={revenueChange >= 0 ? dt.colors.semantic.success.DEFAULT : dt.colors.semantic.danger.DEFAULT}
-                />
-                <Text
+        {/* Hero — unified Shopify-style card with embedded period segments */}
+        <View style={styles.heroWrap}>
+          <View style={styles.heroCard}>
+            {/* Embedded segmented control */}
+            <View style={styles.heroSegments}>
+              {PERIOD_OPTIONS.map((option) => {
+                const isActive = selectedPeriod === option.key;
+                return (
+                  <TouchableOpacity
+                    key={option.key}
+                    style={[styles.heroSeg, isActive && styles.heroSegActive]}
+                    onPress={() => handlePeriodSelect(option.key)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.heroSegText, isActive && styles.heroSegTextActive]}>
+                      {option.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            {/* Label */}
+            <Text style={styles.heroLabel}>
+              הכנסות {PERIOD_OPTIONS.find((p) => p.key === selectedPeriod)?.label}
+            </Text>
+
+            {/* Value + delta */}
+            <View style={styles.heroValueRow}>
+              <Text style={styles.heroValue}>{formatCurrency(totalRevenue)}</Text>
+              {revenueChange !== undefined && revenueChange !== 0 && (
+                <View
                   style={[
-                    styles.trendText,
+                    styles.deltaChip,
                     {
-                      color: revenueChange >= 0
-                        ? dt.colors.semantic.success.DEFAULT
-                        : dt.colors.semantic.danger.DEFAULT,
+                      backgroundColor:
+                        revenueChange >= 0
+                          ? dt.colors.semantic.success.light
+                          : dt.colors.semantic.danger.light,
                     },
                   ]}
                 >
-                  {Math.abs(revenueChange)}%
-                </Text>
-              </View>
-            )}
-          </View>
-
-          {/* Period Pills */}
-          <View style={styles.periodRow}>
-            {PERIOD_OPTIONS.map((option) => {
-              const isActive = selectedPeriod === option.key;
-              return (
-                <TouchableOpacity
-                  key={option.key}
-                  style={[
-                    styles.periodPill,
-                    isActive ? styles.periodPillActive : styles.periodPillInactive,
-                  ]}
-                  onPress={() => handlePeriodSelect(option.key)}
-                  activeOpacity={0.7}
-                >
+                  <Ionicons
+                    name={revenueChange >= 0 ? 'arrow-up' : 'arrow-down'}
+                    size={11}
+                    color={
+                      revenueChange >= 0
+                        ? dt.colors.semantic.success.dark
+                        : dt.colors.semantic.danger.dark
+                    }
+                  />
                   <Text
                     style={[
-                      styles.periodPillText,
-                      isActive ? styles.periodPillTextActive : styles.periodPillTextInactive,
+                      styles.deltaText,
+                      {
+                        color:
+                          revenueChange >= 0
+                            ? dt.colors.semantic.success.dark
+                            : dt.colors.semantic.danger.dark,
+                      },
                     ]}
                   >
-                    {option.label}
+                    {Math.abs(revenueChange)}%
                   </Text>
-                </TouchableOpacity>
-              );
-            })}
+                </View>
+              )}
+            </View>
+
+            {/* Wide sparkline */}
+            {revenueSeries.length > 1 ? (
+              <View style={styles.heroSpark}>
+                <Sparkline
+                  data={revenueSeries}
+                  width={SCREEN_WIDTH - dt.spacing[4] * 2 - dt.spacing[5] * 2}
+                  height={48}
+                  color={
+                    (revenueChange ?? 0) >= 0
+                      ? dt.colors.semantic.success.DEFAULT
+                      : dt.colors.semantic.danger.DEFAULT
+                  }
+                />
+              </View>
+            ) : null}
           </View>
         </View>
 
@@ -683,62 +717,91 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     flex: 1,
   },
-  storeName: {
-    fontSize: 20,
+  greeting: {
+    fontSize: 22,
     fontFamily: fonts.bold,
-    color: dt.colors.ink[900],
+    color: dt.colors.ink[950],
     writingDirection: 'rtl',
     textAlign: 'right',
   },
   dateText: {
     fontSize: 13,
     fontFamily: fonts.regular,
-    color: dt.colors.ink[600],
+    color: dt.colors.ink[500],
     marginTop: 2,
     writingDirection: 'rtl',
     textAlign: 'right',
   },
   settingsButton: {
-    width: 44,
-    height: 44,
+    width: 40,
+    height: 40,
     borderRadius: dt.radii.md,
     backgroundColor: dt.colors.ink[100],
     alignItems: 'center',
     justifyContent: 'center',
   },
 
-  // Revenue Hero
-  revenueHero: {
-    backgroundColor: dt.colors.surface.card,
+  // Hero (Shopify-style)
+  heroWrap: {
     paddingHorizontal: dt.spacing[4],
-    paddingTop: dt.spacing[4],
-    paddingBottom: dt.spacing[4],
-    alignItems: 'flex-start',
-    borderBottomWidth: 1,
-    borderBottomColor: dt.colors.ink[100],
+    paddingTop: dt.spacing[3],
   },
-  revenueValue: {
-    fontSize: 42,
-    lineHeight: 50,
+  heroCard: {
+    backgroundColor: dt.colors.surface.card,
+    borderRadius: dt.radii.lg,
+    padding: dt.spacing[5],
+    gap: dt.spacing[3],
+    ...dt.shadows.subtle,
+  },
+  heroSegments: {
+    flexDirection: 'row',
+    backgroundColor: dt.colors.ink[100],
+    borderRadius: dt.radii.full,
+    padding: 3,
+    gap: 2,
+  },
+  heroSeg: {
+    flex: 1,
+    paddingVertical: 6,
+    borderRadius: dt.radii.full,
+    alignItems: 'center',
+  },
+  heroSegActive: {
+    backgroundColor: dt.colors.surface.card,
+    ...dt.shadows.subtle,
+  },
+  heroSegText: {
+    fontSize: 12,
+    fontFamily: fonts.medium,
+    color: dt.colors.ink[500],
+  },
+  heroSegTextActive: {
+    color: dt.colors.ink[950],
+    fontFamily: fonts.semiBold,
+  },
+  heroLabel: {
+    fontSize: 13,
+    fontFamily: fonts.regular,
+    color: dt.colors.ink[500],
+    textAlign: 'right',
+    writingDirection: 'rtl',
+  },
+  heroValueRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: dt.spacing[2],
+  },
+  heroValue: {
+    fontSize: 38,
+    lineHeight: 46,
     fontFamily: fonts.extraBold,
     color: dt.colors.ink[950],
-    letterSpacing: 0.5,
+    letterSpacing: 0.3,
     writingDirection: 'ltr',
     textAlign: 'right',
   },
-  revenueLabelRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 4,
-    gap: 8,
-  },
-  revenueLabel: {
-    fontSize: 14,
-    fontFamily: fonts.regular,
-    color: dt.colors.ink[600],
-    writingDirection: 'rtl',
-  },
-  trendContainer: {
+  deltaChip: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 2,
@@ -746,43 +809,13 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
     borderRadius: dt.radii.sm,
   },
-  trendText: {
-    fontSize: 13,
+  deltaText: {
+    fontSize: 12,
     fontFamily: fonts.semiBold,
-    fontWeight: '600',
   },
-
-  // Period Pills
-  periodRow: {
-    flexDirection: 'row',
-    gap: 8,
-    marginTop: dt.spacing[4],
-    alignSelf: 'stretch',
-    justifyContent: 'flex-start',
-  },
-  periodPill: {
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderRadius: dt.radii.full,
-  },
-  periodPillActive: {
-    backgroundColor: dt.colors.brand[500],
-  },
-  periodPillInactive: {
-    backgroundColor: dt.colors.ink[50],
-    borderWidth: 1,
-    borderColor: dt.colors.ink[200],
-  },
-  periodPillText: {
-    fontSize: 14,
-    fontFamily: fonts.medium,
-    writingDirection: 'rtl',
-  },
-  periodPillTextActive: {
-    color: dt.colors.surface.onBrand,
-  },
-  periodPillTextInactive: {
-    color: dt.colors.ink[600],
+  heroSpark: {
+    alignItems: 'center',
+    marginTop: dt.spacing[1],
   },
 
   // Stats Row

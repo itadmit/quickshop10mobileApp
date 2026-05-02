@@ -85,6 +85,7 @@ export async function selectStore(store: Store): Promise<void> {
 export async function getCurrentStore(): Promise<{ 
   store: Store; 
   user: User;
+  activePlugins?: string[];
 }> {
   return api.get('/mobile/store');
 }

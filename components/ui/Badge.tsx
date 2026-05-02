@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, StyleSheet, ViewStyle } from 'react-native';
 import { Text } from './Text';
-import { colors, spacing, borderRadius, fontSizes } from './theme';
+import { spacing, borderRadius, fontSizes, fonts, designTokens } from './theme';
 
 type BadgeVariant = 'default' | 'primary' | 'secondary' | 'success' | 'warning' | 'error' | 'info';
 type BadgeSize = 'sm' | 'md';
@@ -13,14 +13,15 @@ interface BadgeProps {
   style?: ViewStyle;
 }
 
+// מינימליסטי - צבעים עדינים
 const variantStyles: Record<BadgeVariant, { bg: string; text: string }> = {
-  default: { bg: colors.gray200, text: colors.gray700 },
-  primary: { bg: colors.primaryLight, text: colors.primaryDark },
-  secondary: { bg: colors.secondaryLight, text: colors.secondaryDark },
-  success: { bg: colors.successLight, text: '#15803d' },
-  warning: { bg: colors.warningLight, text: '#b45309' },
-  error: { bg: colors.errorLight, text: '#b91c1c' },
-  info: { bg: colors.infoLight, text: '#0e7490' },
+  default: { bg: designTokens.colors.ink[100], text: designTokens.colors.ink[500] },
+  primary: { bg: designTokens.colors.brand[50], text: designTokens.colors.brand[500] },
+  secondary: { bg: designTokens.colors.ink[100], text: designTokens.colors.ink[500] },
+  success: { bg: designTokens.colors.semantic.success.light, text: designTokens.colors.semantic.success.DEFAULT },
+  warning: { bg: designTokens.colors.semantic.warning.light, text: designTokens.colors.semantic.warning.DEFAULT },
+  error: { bg: designTokens.colors.semantic.danger.light, text: designTokens.colors.semantic.danger.DEFAULT },
+  info: { bg: designTokens.colors.semantic.info.light, text: designTokens.colors.semantic.info.DEFAULT },
 };
 
 export function Badge({
@@ -39,16 +40,16 @@ export function Badge({
         {
           backgroundColor: variantStyle.bg,
           paddingVertical: isSmall ? spacing[0.5] : spacing[1],
-          paddingHorizontal: isSmall ? spacing[2] : spacing[3],
+          paddingHorizontal: isSmall ? spacing[2] : spacing[2.5],
         },
         style,
       ]}
     >
       <Text
-        weight="medium"
         style={{
           color: variantStyle.text,
           fontSize: isSmall ? fontSizes.xs : fontSizes.sm,
+          fontFamily: fonts.medium,
         }}
       >
         {children}
@@ -57,7 +58,7 @@ export function Badge({
   );
 }
 
-// Order Status Badge
+// Order Status Badge - מינימליסטי
 export function OrderStatusBadge({
   status,
   size = 'md',
@@ -68,7 +69,7 @@ export function OrderStatusBadge({
   const statusMap: Record<string, { label: string; variant: BadgeVariant }> = {
     pending: { label: 'ממתינה', variant: 'warning' },
     confirmed: { label: 'אושרה', variant: 'primary' },
-    processing: { label: 'בטיפול', variant: 'secondary' },
+    processing: { label: 'בטיפול', variant: 'info' },
     shipped: { label: 'נשלחה', variant: 'info' },
     delivered: { label: 'נמסרה', variant: 'success' },
     cancelled: { label: 'בוטלה', variant: 'error' },
@@ -84,7 +85,7 @@ export function OrderStatusBadge({
   );
 }
 
-// Stock Badge
+// Stock Badge - מינימליסטי
 export function StockBadge({
   inventory,
   size = 'md',
@@ -129,4 +130,3 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
 });
-

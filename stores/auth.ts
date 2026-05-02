@@ -9,7 +9,9 @@ import {
   clearAllAuth,
   saveStoreId,
   saveStoreSlug,
+  saveStores,
 } from '@/lib/utils/storage';
+import { getCurrentStore as fetchCurrentStore } from '@/lib/api/auth';
 
 interface AuthState {
   // State
@@ -18,9 +20,11 @@ interface AuthState {
   user: User | null;
   stores: Store[];
   currentStore: Store | null;
+  activePlugins: string[];
 
   // Actions
   initialize: () => Promise<void>;
+  refreshCurrentStore: () => Promise<void>;
   setUser: (user: User) => void;
   setStores: (stores: Store[]) => void;
   selectStore: (store: Store) => Promise<void>;
@@ -34,6 +38,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   stores: [],
   currentStore: null,
+  activePlugins: [],
 
   // Initialize auth state from storage
   initialize: async () => {
@@ -69,9 +74,36 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         stores,
         currentStore,
       });
+
+      // Fetch active plugins from the API right after auth init
+      get().refreshCurrentStore();
     } catch {
       await clearAllAuth();
       set({ isAuthenticated: false, isLoading: false });
+    }
+  },
+
+  // Refresh store data from the API (to pick up name changes, plugin status, etc.)
+  refreshCurrentStore: async () => {
+    try {
+      const response = await fetchCurrentStore();
+      console.log('[AUTH] refreshCurrentStore response keys:', Object.keys(response || {}));
+      console.log('[AUTH] activePlugins from API:', JSON.stringify(response?.activePlugins));
+      if (response?.store) {
+        const { stores } = get();
+        const updatedStores = stores.map((s) =>
+          s.id === response.store.id ? { ...s, ...response.store } : s
+        );
+        await saveStores(updatedStores);
+        set({
+          currentStore: { ...get().currentStore, ...response.store } as Store,
+          stores: updatedStores,
+          activePlugins: response.activePlugins ?? get().activePlugins,
+        });
+        console.log('[AUTH] activePlugins set to:', JSON.stringify(response.activePlugins ?? get().activePlugins));
+      }
+    } catch (err) {
+      console.log('[AUTH] Failed to refresh store data:', err);
     }
   },
 
@@ -108,6 +140,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       user: null,
       stores: [],
       currentStore: null,
+      activePlugins: [],
     });
   },
 }));

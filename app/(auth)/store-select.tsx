@@ -1,11 +1,13 @@
 import React from 'react';
 import { View, StyleSheet, FlatList, TouchableOpacity, Image } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useAuthStore } from '@/stores';
 import { useAuth } from '@/hooks';
-import { Text, Title, Card, colors, spacing, borderRadius } from '@/components/ui';
+import { Text, designTokens, fonts } from '@/components/ui';
 import type { Store } from '@/types';
+
+const dt = designTokens;
 
 export default function StoreSelectScreen() {
   const router = useRouter();
@@ -27,45 +29,29 @@ export default function StoreSelectScreen() {
       onPress={() => handleSelectStore(store)}
       activeOpacity={0.7}
     >
-      <View style={styles.storeContent}>
-        {store.logoUrl ? (
-          <Image source={{ uri: store.logoUrl }} style={styles.storeLogo} />
-        ) : (
-          <View style={styles.storeLogoPlaceholder}>
-            <Text size="xl" weight="bold" style={{ color: colors.white }}>
-              {store.name.charAt(0)}
-            </Text>
-          </View>
-        )}
-        <View style={styles.storeInfo}>
-          <Text weight="semiBold" size="lg">
-            {store.name}
-          </Text>
-          <Text color="secondary" size="sm">
-            {store.slug}.quickshop.co.il
-          </Text>
-          <View style={styles.roleContainer}>
-            <Text size="xs" style={styles.roleText}>
-              {getRoleLabel(store.role)}
-            </Text>
-          </View>
+      {store.logoUrl ? (
+        <Image source={{ uri: store.logoUrl }} style={styles.storeLogo} />
+      ) : (
+        <View style={styles.storeLogoPlaceholder}>
+          <Text style={styles.storeLogoText}>{store.name.charAt(0)}</Text>
         </View>
-        <View style={styles.arrow}>
-          <Text color="muted" size="lg">
-            ←
-          </Text>
+      )}
+      <View style={styles.storeInfo}>
+        <Text style={styles.storeName}>{store.name}</Text>
+        <Text style={styles.storeUrl}>{store.slug}.quickshop.co.il</Text>
+        <View style={styles.roleContainer}>
+          <Text style={styles.roleText}>{getRoleLabel(store.role)}</Text>
         </View>
       </View>
+      <Ionicons name="chevron-back" size={18} color={dt.colors.ink[400]} />
     </TouchableOpacity>
   );
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Title>בחר חנות</Title>
-        <Text color="secondary" style={styles.subtitle}>
-          בחר את החנות שברצונך לנהל
-        </Text>
+        <Text style={styles.title}>{'\u05D1\u05D7\u05E8 \u05D7\u05E0\u05D5\u05EA'}</Text>
+        <Text style={styles.subtitle}>{'\u05D1\u05D7\u05E8 \u05D0\u05EA \u05D4\u05D7\u05E0\u05D5\u05EA \u05E9\u05D1\u05E8\u05E6\u05D5\u05E0\u05DA \u05DC\u05E0\u05D4\u05DC'}</Text>
       </View>
 
       <FlatList
@@ -78,9 +64,7 @@ export default function StoreSelectScreen() {
 
       <View style={styles.footer}>
         <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
-          <Text color="error" weight="medium">
-            התנתק
-          </Text>
+          <Text style={styles.logoutText}>{'\u05D4\u05EA\u05E0\u05EA\u05E7'}</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -89,10 +73,10 @@ export default function StoreSelectScreen() {
 
 function getRoleLabel(role: Store['role']): string {
   const labels: Record<Store['role'], string> = {
-    owner: 'בעלים',
-    manager: 'מנהל',
-    marketing: 'שיווק',
-    developer: 'מפתח',
+    owner: '\u05D1\u05E2\u05DC\u05D9\u05DD',
+    manager: '\u05DE\u05E0\u05D4\u05DC',
+    marketing: '\u05E9\u05D9\u05D5\u05D5\u05E7',
+    developer: '\u05DE\u05E4\u05EA\u05D7',
   };
   return labels[role] || role;
 }
@@ -100,72 +84,95 @@ function getRoleLabel(role: Store['role']): string {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F6F6F7',
+    backgroundColor: dt.colors.surface.background,
   },
   header: {
-    padding: spacing[6],
-    paddingBottom: spacing[4],
+    padding: dt.spacing[5],
+    paddingBottom: dt.spacing[4],
+  },
+  title: {
+    fontSize: 28,
+    fontFamily: fonts.bold,
+    color: dt.colors.ink[950],
+    textAlign: 'right',
   },
   subtitle: {
-    marginTop: spacing[2],
+    fontSize: 14,
+    color: dt.colors.ink[400],
+    marginTop: dt.spacing[1],
+    textAlign: 'right',
   },
   list: {
-    paddingHorizontal: spacing[4],
+    paddingHorizontal: dt.spacing[4],
   },
   storeCard: {
-    backgroundColor: colors.white,
-    borderRadius: borderRadius.xl,
-    marginBottom: spacing[3],
+    backgroundColor: dt.colors.surface.card,
+    borderRadius: dt.radii.lg,
     borderWidth: 1,
-    borderColor: '#E1E3E5',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  storeContent: {
-    flexDirection: 'row-reverse',
+    borderColor: dt.colors.ink[200],
+    marginBottom: dt.spacing[3],
+    padding: dt.spacing[4],
+    flexDirection: 'row',
     alignItems: 'center',
-    padding: spacing[4],
+    gap: dt.spacing[3],
   },
   storeLogo: {
-    width: 56,
-    height: 56,
-    borderRadius: borderRadius.md,
+    width: 52,
+    height: 52,
+    borderRadius: dt.radii.md,
   },
   storeLogoPlaceholder: {
-    width: 56,
-    height: 56,
-    borderRadius: borderRadius.md,
-    backgroundColor: '#00785C',
+    width: 52,
+    height: 52,
+    borderRadius: dt.radii.md,
+    backgroundColor: dt.colors.brand[500],
     alignItems: 'center',
     justifyContent: 'center',
   },
+  storeLogoText: {
+    fontSize: 22,
+    fontFamily: fonts.bold,
+    color: '#FFFFFF',
+  },
   storeInfo: {
     flex: 1,
-    marginRight: spacing[4],
+    alignItems: 'flex-start',
+  },
+  storeName: {
+    fontSize: 17,
+    fontFamily: fonts.semiBold,
+    color: dt.colors.ink[950],
+    textAlign: 'right',
+  },
+  storeUrl: {
+    fontSize: 13,
+    color: dt.colors.ink[400],
+    marginTop: 2,
+    textAlign: 'right',
   },
   roleContainer: {
-    marginTop: spacing[1],
-    backgroundColor: colors.gray100,
-    paddingVertical: spacing[0.5],
-    paddingHorizontal: spacing[2],
-    borderRadius: borderRadius.full,
-    alignSelf: 'flex-start',
+    marginTop: dt.spacing[2],
+    backgroundColor: dt.colors.ink[100],
+    paddingVertical: 2,
+    paddingHorizontal: dt.spacing[2],
+    borderRadius: dt.radii.full,
   },
   roleText: {
-    color: colors.gray600,
-  },
-  arrow: {
-    paddingLeft: spacing[2],
+    fontSize: 11,
+    color: dt.colors.ink[500],
+    fontFamily: fonts.medium,
+    textAlign: 'right',
   },
   footer: {
-    padding: spacing[6],
+    padding: dt.spacing[6],
     alignItems: 'center',
   },
   logoutButton: {
-    padding: spacing[3],
+    padding: dt.spacing[3],
+  },
+  logoutText: {
+    fontSize: 15,
+    color: dt.colors.semantic.danger.DEFAULT,
+    fontFamily: fonts.medium,
   },
 });
-

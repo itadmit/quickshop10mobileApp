@@ -37,7 +37,8 @@ export function useInfiniteCustomers(params: Omit<CustomersListParams, 'page'> =
       return undefined;
     },
     initialPageParam: 1,
-    staleTime: 1000 * 60 * 5,
+    staleTime: 1000 * 30, // 30 seconds - תיקון בעיית refresh
+    refetchOnMount: true,
   });
 }
 
@@ -137,6 +138,39 @@ export function useAddCustomerNote() {
     
     onSuccess: (_, { customerId }) => {
       queryClient.invalidateQueries({ queryKey: customersKeys.detail(customerId) });
+    },
+  });
+}
+
+// ============ Create Customer ============
+export function useCreateCustomer() {
+  const queryClient = useQueryClient();
+  const triggerRefresh = useAppStore((s) => s.triggerCustomersRefresh);
+  
+  return useMutation({
+    mutationFn: (data: customersApi.CreateCustomerData) => 
+      customersApi.createCustomer(data),
+    
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: customersKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: customersKeys.stats() });
+      triggerRefresh();
+    },
+  });
+}
+
+// ============ Delete Customer ============
+export function useDeleteCustomer() {
+  const queryClient = useQueryClient();
+  const triggerRefresh = useAppStore((s) => s.triggerCustomersRefresh);
+  
+  return useMutation({
+    mutationFn: (customerId: string) => customersApi.deleteCustomer(customerId),
+    
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: customersKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: customersKeys.stats() });
+      triggerRefresh();
     },
   });
 }

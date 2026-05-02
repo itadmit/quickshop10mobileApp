@@ -38,7 +38,8 @@ export function useInfiniteProducts(params: Omit<ProductsListParams, 'page'> = {
       return undefined;
     },
     initialPageParam: 1,
-    staleTime: 1000 * 60 * 5,
+    staleTime: 1000 * 30, // 30 seconds - תיקון בעיית refresh
+    refetchOnMount: true,
   });
 }
 
@@ -188,6 +189,121 @@ export function useToggleProductStatus() {
     
     onSuccess: () => {
       triggerRefresh();
+    },
+  });
+}
+
+// ============ Create Product ============
+export function useCreateProduct() {
+  const queryClient = useQueryClient();
+  const triggerRefresh = useAppStore((s) => s.triggerProductsRefresh);
+  
+  return useMutation({
+    mutationFn: (data: productsApi.CreateProductData) => productsApi.createProduct(data),
+    
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: productsKeys.lists() });
+      triggerRefresh();
+    },
+  });
+}
+
+// ============ Update Product (Full) ============
+export function useUpdateProduct() {
+  const queryClient = useQueryClient();
+  const triggerRefresh = useAppStore((s) => s.triggerProductsRefresh);
+  
+  return useMutation({
+    mutationFn: ({ productId, data }: {
+      productId: string;
+      data: Partial<productsApi.CreateProductData>;
+    }) => productsApi.updateProduct(productId, data),
+    
+    onSuccess: (_data, { productId }) => {
+      queryClient.invalidateQueries({ queryKey: productsKeys.detail(productId) });
+      queryClient.invalidateQueries({ queryKey: productsKeys.lists() });
+      triggerRefresh();
+    },
+  });
+}
+
+// ============ Delete Product ============
+export function useDeleteProduct() {
+  const queryClient = useQueryClient();
+  const triggerRefresh = useAppStore((s) => s.triggerProductsRefresh);
+  
+  return useMutation({
+    mutationFn: (productId: string) => productsApi.deleteProduct(productId),
+    
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: productsKeys.lists() });
+      triggerRefresh();
+    },
+  });
+}
+
+// ============ Duplicate Product ============
+export function useDuplicateProduct() {
+  const queryClient = useQueryClient();
+  const triggerRefresh = useAppStore((s) => s.triggerProductsRefresh);
+  
+  return useMutation({
+    mutationFn: (productId: string) => productsApi.duplicateProduct(productId),
+    
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: productsKeys.lists() });
+      triggerRefresh();
+    },
+  });
+}
+
+// ============ Upload Image ============
+export function useUploadImage() {
+  return useMutation({
+    mutationFn: ({ uri, fileName, mimeType }: {
+      uri: string;
+      fileName: string;
+      mimeType: string;
+    }) => productsApi.uploadProductImage(uri, fileName, mimeType),
+  });
+}
+
+// ============ Category Mutations ============
+export function useCreateCategory() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: (data: productsApi.CreateCategoryData) => productsApi.createCategory(data),
+    
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: productsKeys.categories() });
+    },
+  });
+}
+
+export function useUpdateCategory() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: ({ categoryId, data }: {
+      categoryId: string;
+      data: Partial<productsApi.CreateCategoryData>;
+    }) => productsApi.updateCategory(categoryId, data),
+    
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: productsKeys.categories() });
+    },
+  });
+}
+
+export function useDeleteCategory() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: (categoryId: string) => productsApi.deleteCategory(categoryId),
+    
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: productsKeys.categories() });
     },
   });
 }

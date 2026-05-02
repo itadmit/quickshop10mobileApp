@@ -1,0 +1,60 @@
+---
+description: RTL text alignment rules for Hebrew UI in React Native with forced RTL
+globs: "**/*.tsx"
+alwaysApply: false
+---
+
+# RTL Text Alignment
+
+This project uses `I18nManager.forceRTL(true)` and a custom `Text` component (`@/components/ui/Text`) with base styles `writingDirection: 'rtl'` and `textAlign: 'right'`.
+
+React Native **flips** `textAlign` values in forced RTL mode. Combined with the base style, the result is:
+
+- `textAlign: 'right'` → renders on the **LEFT** (wrong for Hebrew)
+- `textAlign: 'left'` → renders on the **RIGHT** (correct for Hebrew)
+
+## Rules
+
+1. To align text to the **right** (correct for Hebrew), use `textAlign: 'left'`
+2. For `flexDirection: 'row'`, the **first child** appears on the **right** in RTL. Order children accordingly: primary content first (right), secondary content last (left)
+3. `alignItems: 'flex-start'` = right side, `alignItems: 'flex-end'` = left side
+4. `justifyContent: 'flex-start'` = right side in row direction
+
+```typescript
+// ❌ BAD - text appears on the LEFT
+inputLabel: {
+  textAlign: 'right',
+  writingDirection: 'rtl',
+}
+
+// ✅ GOOD - text appears on the RIGHT
+inputLabel: {
+  textAlign: 'left',
+  writingDirection: 'rtl',
+}
+```
+
+## Custom Toggle / Switch (RTL)
+
+In a column-direction container, `alignSelf` is **not** flipped by forced RTL. For custom toggle components, swap the values:
+
+5. Toggle thumb OFF (default): use `alignSelf: 'flex-end'` → thumb on **right** (RTL start)
+6. Toggle thumb ON (active): use `alignSelf: 'flex-start'` → thumb on **left** (RTL end)
+
+```typescript
+// ❌ BAD - toggle thumb moves LTR (left→right)
+toggleThumb: {
+  // no alignSelf → defaults to left
+}
+toggleThumbActive: {
+  alignSelf: 'flex-end', // goes right = wrong for RTL ON
+}
+
+// ✅ GOOD - toggle thumb moves RTL (right→left)
+toggleThumb: {
+  alignSelf: 'flex-end', // right = OFF position in RTL
+}
+toggleThumbActive: {
+  alignSelf: 'flex-start', // left = ON position in RTL
+}
+```

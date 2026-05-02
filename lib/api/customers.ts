@@ -70,11 +70,51 @@ export async function addCustomerNote(
 }
 
 // ============ Customer Stats ============
+/** השרת מחזיר stats בתוך GET /mobile/customers (אין endpoint נפרד /stats) */
 export async function getCustomersStats(): Promise<{
   total: number;
   new: number;
   returning: number;
   avgSpent: number;
 }> {
-  return api.get(`/mobile/customers/stats`);
+  const res = await api.get<CustomersListResponse>(`/mobile/customers?limit=1`);
+  const stats = res.stats;
+  return {
+    total: stats?.total ?? res.pagination?.total ?? 0,
+    new: 0,
+    returning: stats?.returning ?? 0,
+    avgSpent: 0,
+  };
+}
+
+// ============ Create Customer ============
+export interface CreateCustomerData {
+  email: string;
+  firstName?: string;
+  lastName?: string;
+  phone?: string;
+  notes?: string;
+  acceptsMarketing?: boolean;
+  defaultAddress?: {
+    street?: string;
+    houseNumber?: string;
+    apartment?: string;
+    floor?: string;
+    city?: string;
+    zipCode?: string;
+    phone?: string;
+  };
+}
+
+export async function createCustomer(
+  data: CreateCustomerData
+): Promise<{ success: boolean; customer: Customer }> {
+  return api.post(`/mobile/customers`, data);
+}
+
+// ============ Delete Customer ============
+export async function deleteCustomer(
+  customerId: string
+): Promise<{ success: boolean }> {
+  return api.delete(`/mobile/customers/${customerId}`);
 }

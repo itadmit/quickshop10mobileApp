@@ -1,6 +1,6 @@
 import React from 'react';
 import { Text as RNText, TextProps as RNTextProps, StyleSheet } from 'react-native';
-import { colors, fonts, fontSizes } from './theme';
+import { fonts, fontSizes, designTokens } from './theme';
 
 type FontWeight = 'regular' | 'medium' | 'semiBold' | 'bold' | 'extraBold';
 type FontSize = keyof typeof fontSizes;
@@ -15,13 +15,13 @@ interface TextProps extends RNTextProps {
 }
 
 const colorMap: Record<TextColor, string> = {
-  primary: colors.textPrimary,
-  secondary: colors.textSecondary,
-  muted: colors.textMuted,
-  inverse: colors.textInverse,
-  error: colors.error,
-  success: colors.success,
-  warning: colors.warning,
+  primary: designTokens.colors.ink[950],
+  secondary: designTokens.colors.ink[500],
+  muted: designTokens.colors.ink[400],
+  inverse: '#FFFFFF',
+  error: designTokens.colors.semantic.danger.DEFAULT,
+  success: designTokens.colors.semantic.success.DEFAULT,
+  warning: designTokens.colors.semantic.warning.DEFAULT,
 };
 
 export function Text({

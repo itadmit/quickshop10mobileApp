@@ -1,19 +1,18 @@
 import React from 'react';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { Text } from './Text';
-import { colors, spacing } from './theme';
+import { colors, spacing, borderRadius, fonts, designTokens } from './theme';
 
 interface LoadingScreenProps {
   message?: string;
 }
 
+// מינימליסטי - מסך טעינה נקי
 export function LoadingScreen({ message = 'טוען...' }: LoadingScreenProps) {
   return (
     <View style={styles.container}>
-      <ActivityIndicator size="large" color={colors.primary} />
-      <Text color="secondary" style={styles.message}>
-        {message}
-      </Text>
+      <ActivityIndicator size="large" color={designTokens.colors.brand[500]} />
+      <Text style={styles.message}>{message}</Text>
     </View>
   );
 }
@@ -24,7 +23,7 @@ export function LoadingOverlay({ visible, message }: { visible: boolean; message
   return (
     <View style={styles.overlay}>
       <View style={styles.overlayContent}>
-        <ActivityIndicator size="large" color={colors.primary} />
+        <ActivityIndicator size="large" color={designTokens.colors.brand[500]} />
         {message && (
           <Text style={styles.overlayMessage}>{message}</Text>
         )}
@@ -38,10 +37,13 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.background,
+    backgroundColor: designTokens.colors.surface.card,
   },
   message: {
-    marginTop: spacing[4],
+    marginTop: spacing[3],
+    fontSize: 14,
+    color: designTokens.colors.ink[400],
+    fontFamily: fonts.regular,
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
@@ -51,14 +53,16 @@ const styles = StyleSheet.create({
     zIndex: 1000,
   },
   overlayContent: {
-    backgroundColor: colors.surface,
+    backgroundColor: designTokens.colors.surface.card,
     padding: spacing[6],
-    borderRadius: 16,
+    borderRadius: borderRadius.md,
     alignItems: 'center',
-    minWidth: 150,
+    minWidth: 140,
   },
   overlayMessage: {
     marginTop: spacing[3],
+    fontSize: 14,
+    color: designTokens.colors.ink[500],
+    fontFamily: fonts.regular,
   },
 });
-

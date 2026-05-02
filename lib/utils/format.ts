@@ -15,10 +15,82 @@ export function formatCurrency(amount: number, currency: string = 'ILS'): string
   }).format(amount);
 }
 
+// ============ Product Price Formatting (with variants support) ============
+export interface ProductForPrice {
+  price: number | null;
+  hasVariants?: boolean;
+  variants?: Array<{ price: number }>;
+  minPrice?: number | null;  // Some APIs return this directly
+  maxPrice?: number | null;  // Some APIs return this directly
+}
+
+export function getProductPriceRange(product: ProductForPrice): {
+  minPrice: number | null;
+  maxPrice: number | null;
+  hasRange: boolean;
+} {
+  // If API returns minPrice/maxPrice directly, use them
+  if (product.minPrice !== null && product.minPrice !== undefined) {
+    const min = product.minPrice;
+    const max = product.maxPrice ?? product.minPrice;
+    return { minPrice: min, maxPrice: max, hasRange: min !== max };
+  }
+  
+  // If product has direct price, use it
+  if (product.price !== null && product.price !== undefined) {
+    return { minPrice: product.price, maxPrice: product.price, hasRange: false };
+  }
+  
+  // If product has variants, calculate min/max from variants
+  if (product.hasVariants && product.variants && product.variants.length > 0) {
+    const prices = product.variants.map(v => v.price).filter(p => p != null && p > 0);
+    if (prices.length > 0) {
+      const minPrice = Math.min(...prices);
+      const maxPrice = Math.max(...prices);
+      return { 
+        minPrice, 
+        maxPrice, 
+        hasRange: minPrice !== maxPrice 
+      };
+    }
+  }
+  
+  return { minPrice: null, maxPrice: null, hasRange: false };
+}
+
+export function formatProductPrice(product: ProductForPrice, currency: string = 'ILS'): string {
+  const { minPrice, maxPrice, hasRange } = getProductPriceRange(product);
+  
+  if (minPrice === null) {
+    return '';
+  }
+  
+  if (hasRange && maxPrice !== null) {
+    return `${formatCurrency(minPrice, currency)} - ${formatCurrency(maxPrice, currency)}`;
+  }
+  
+  return formatCurrency(minPrice, currency);
+}
+
+export function getProductMinPrice(product: ProductForPrice): number | null {
+  const { minPrice } = getProductPriceRange(product);
+  return minPrice;
+}
+
 // ============ Date Formatting ============
 export function formatDate(date: string | Date): string {
   const d = new Date(date);
   return format(d, 'dd/MM/yyyy', { locale: he });
+}
+
+export function formatDateShort(date: string | Date): string {
+  const d = new Date(date);
+  return format(d, 'dd/MM/yy', { locale: he });
+}
+
+export function formatDateTimeShort(date: string | Date): string {
+  const d = new Date(date);
+  return format(d, 'dd/MM/yy HH:mm', { locale: he });
 }
 
 export function formatDateTime(date: string | Date): string {
@@ -127,7 +199,12 @@ export function formatAddress(address: {
   floor?: string;
   city?: string;
   zipCode?: string;
-}): string {
+} | null | undefined): string {
+  // Handle null/undefined address
+  if (!address) {
+    return 'לא צוינה כתובת';
+  }
+  
   const parts: string[] = [];
   
   if (address.street) {

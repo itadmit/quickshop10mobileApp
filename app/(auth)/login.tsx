@@ -6,13 +6,15 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  Image,
   TouchableOpacity,
+  Linking,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/hooks';
-import { Text, Title, Button, Input, colors, spacing, borderRadius, shadows } from '@/components/ui';
+import { Text, Button, Input, designTokens, fonts } from '@/components/ui';
+
+const dt = designTokens;
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -23,7 +25,7 @@ export default function LoginScreen() {
 
   const handleLogin = async () => {
     if (!email || !password) return;
-    
+
     try {
       const response = await login(email, password);
       if (response.success) {
@@ -38,8 +40,12 @@ export default function LoginScreen() {
     }
   };
 
+  const openURL = (url: string) => {
+    Linking.openURL(url).catch(() => {});
+  };
+
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <View style={styles.container}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
@@ -48,32 +54,26 @@ export default function LoginScreen() {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
+          bounces={false}
         >
-          {/* Logo */}
-          <View style={styles.logoContainer}>
-            <Text style={styles.title}>QuickShop</Text>
-            <Text color="secondary" style={styles.subtitle}>
-              ניהול החנות שלך מכל מקום
-            </Text>
-          </View>
-
-          {/* Form Card */}
-          <View style={styles.formCard}>
-            <View style={styles.formTitleContainer}>
-              <Text weight="bold" size="xl" style={styles.formTitle}>
-                התחברות
-              </Text>
+          {/* Hero Header */}
+          <SafeAreaView edges={['top']} style={styles.heroSection}>
+            <View style={styles.heroContent}>
+              <View style={styles.logoContainer}>
+                <Text style={styles.logoText}>QuickShop</Text>
+              </View>
             </View>
-            <View style={styles.formSubtitleContainer}>
-              <Text color="secondary" style={styles.formSubtitle}>
-                היכנס לחשבון שלך כדי להמשיך
-              </Text>
-            </View>
+          </SafeAreaView>
 
-            <View style={styles.form}>
-              <View style={styles.formInputs}>
+          {/* Form Area */}
+          <View style={styles.formArea}>
+            <View style={styles.formCard}>
+              <Text style={styles.formTitle}>{'\u05D4\u05EA\u05D7\u05D1\u05E8\u05D5\u05EA'}</Text>
+              <Text style={styles.formSubtitle}>{'\u05D4\u05D9\u05DB\u05E0\u05E1 \u05DC\u05D7\u05E9\u05D1\u05D5\u05DF \u05E9\u05DC\u05DA \u05DB\u05D3\u05D9 \u05DC\u05D4\u05DE\u05E9\u05D9\u05DA'}</Text>
+
+              <View style={styles.form}>
                 <Input
-                  label="אימייל"
+                  label={'\u05D0\u05D9\u05DE\u05D9\u05D9\u05DC'}
                   value={email}
                   onChangeText={(text) => {
                     setEmail(text);
@@ -85,179 +85,197 @@ export default function LoginScreen() {
                   autoCorrect={false}
                   editable={!isLoggingIn}
                 />
-              </View>
 
-              <View style={styles.formInputs}>
                 <Input
-                  label="סיסמה"
+                  label={'\u05E1\u05D9\u05E1\u05DE\u05D4'}
                   value={password}
                   onChangeText={(text) => {
                     setPassword(text);
                     clearError();
                   }}
-                  placeholder="••••••••"
+                  placeholder={'\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022'}
                   secureTextEntry={!showPassword}
                   autoCapitalize="none"
                   editable={!isLoggingIn}
                   rightIcon={
-                    <Ionicons 
-                      name={showPassword ? 'eye-off-outline' : 'eye-outline'} 
-                      size={20} 
-                      color={colors.gray400} 
-                    />
+                    <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+                      <Ionicons
+                        name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                        size={20}
+                        color={dt.colors.ink[400]}
+                      />
+                    </TouchableOpacity>
                   }
-                  onRightIconPress={() => setShowPassword(!showPassword)}
                 />
+
+                {loginError && (
+                  <View style={styles.errorContainer}>
+                    <Text style={styles.errorText}>{loginError}</Text>
+                    <Ionicons name="alert-circle" size={16} color={dt.colors.semantic.danger.DEFAULT} />
+                  </View>
+                )}
+
+                <Button
+                  onPress={handleLogin}
+                  loading={isLoggingIn}
+                  disabled={!email || !password}
+                  fullWidth
+                  size="lg"
+                >
+                  {'\u05D4\u05EA\u05D7\u05D1\u05E8'}
+                </Button>
+
+                <TouchableOpacity
+                  style={styles.forgotPassword}
+                  onPress={() => openURL('https://my-quickshop.com/forgot-password')}
+                >
+                  <Text style={styles.forgotPasswordText}>{'\u05E9\u05DB\u05D7\u05EA \u05E1\u05D9\u05E1\u05DE\u05D4?'}</Text>
+                </TouchableOpacity>
               </View>
-
-              {loginError && (
-                <View style={styles.errorContainer}>
-                  <Text color="error" style={styles.errorText}>
-                    {loginError}
-                  </Text>
-                  <Ionicons name="alert-circle" size={16} color={colors.error} />
-                </View>
-              )}
-
-              <Button
-                onPress={handleLogin}
-                loading={isLoggingIn}
-                disabled={!email || !password}
-                fullWidth
-                size="lg"
-                style={styles.loginButton}
-              >
-                התחבר לחשבון
-              </Button>
-
-              <TouchableOpacity style={styles.forgotPassword}>
-                <Text size="sm" style={{ color: '#00785C' }}>
-                  שכחת סיסמה?
-                </Text>
-              </TouchableOpacity>
             </View>
-          </View>
 
-          {/* Footer */}
-          <View style={styles.footer}>
-            <TouchableOpacity>
-              <Text
-                size="sm"
-                weight="semiBold"
-                style={{ color: '#00785C', textAlign: 'center' }}
-              >
-                צור חנות חדשה
+            {/* Legal Links */}
+            <View style={styles.legalSection}>
+              <Text style={styles.legalNote}>
+                {'\u05D1\u05D4\u05EA\u05D7\u05D1\u05E8\u05D5\u05EA \u05D0\u05EA\u05D4 \u05DE\u05E1\u05DB\u05D9\u05DD \u05DC\u05EA\u05E0\u05D0\u05D9 \u05D4\u05E9\u05D9\u05DE\u05D5\u05E9 \u05D5\u05DE\u05D3\u05D9\u05E0\u05D9\u05D5\u05EA \u05D4\u05E4\u05E8\u05D8\u05D9\u05D5\u05EA \u05E9\u05DC\u05E0\u05D5'}
               </Text>
-            </TouchableOpacity>
-            <Text color="secondary" size="sm" style={{ textAlign: 'center' }}>
-              {' '}אין לך חשבון?
-            </Text>
-          </View>
-
-          {/* Version */}
-          <View style={styles.version}>
-            <Text color="secondary" size="xs" style={{ textAlign: 'center' }}>
-              v.3.0.1
-            </Text>
+              <View style={styles.legalLinks}>
+                <TouchableOpacity onPress={() => openURL('https://my-quickshop.com/privacy')}>
+                  <Text style={styles.legalLink}>{'\u05DE\u05D3\u05D9\u05E0\u05D9\u05D5\u05EA \u05E4\u05E8\u05D8\u05D9\u05D5\u05EA'}</Text>
+                </TouchableOpacity>
+                <Text style={styles.legalSeparator}> {'\u2022'} </Text>
+                <TouchableOpacity onPress={() => openURL('https://my-quickshop.com/terms')}>
+                  <Text style={styles.legalLink}>{'\u05EA\u05E0\u05D0\u05D9 \u05E9\u05D9\u05DE\u05D5\u05E9'}</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F6F6F7',
+    backgroundColor: dt.colors.surface.background,
   },
   keyboardView: {
     flex: 1,
   },
   scrollContent: {
     flexGrow: 1,
-    padding: spacing[6],
-    justifyContent: 'center',
-    minHeight: '100%',
+  },
+
+  // Hero
+  heroSection: {
+    backgroundColor: dt.colors.surface.background,
+    paddingBottom: dt.spacing[6],
+  },
+  heroContent: {
+    alignItems: 'center',
+    paddingTop: dt.spacing[10],
+    paddingBottom: dt.spacing[4],
   },
   logoContainer: {
-    alignItems: 'center',
-    marginBottom: spacing[8],
+    marginBottom: dt.spacing[2],
   },
-  title: {
-    fontSize: 48,
+  logoText: {
+    fontSize: 42,
     fontFamily: 'Pacifico_400Regular',
-    marginBottom: spacing[2],
-    textAlign: 'center',
-    color: '#00785C',
+    color: dt.colors.brand[500],
     letterSpacing: 1,
   },
-  subtitle: {
-    textAlign: 'center',
+  heroSubtitle: {
+    fontSize: 15,
+    fontFamily: fonts.regular,
+    color: dt.colors.ink[500],
+    marginTop: dt.spacing[2],
+    textAlign: 'right',
+  },
+
+  // Form Area
+  formArea: {
+    flex: 1,
+    paddingHorizontal: dt.spacing[5],
   },
   formCard: {
-    backgroundColor: colors.white,
-    borderRadius: borderRadius.xl,
-    padding: spacing[6],
-    marginBottom: spacing[6],
+    backgroundColor: dt.colors.surface.card,
+    borderRadius: dt.radii.lg,
     borderWidth: 1,
-    borderColor: '#E1E3E5',
-    ...shadows.base,
-  },
-  formTitleContainer: {
-    alignItems: 'flex-end', // ב-RTL, flex-end = ימין המסך
-    marginBottom: spacing[1],
+    borderColor: dt.colors.ink[200],
+    padding: dt.spacing[6],
   },
   formTitle: {
+    fontSize: 22,
+    fontFamily: fonts.bold,
+    color: dt.colors.ink[950],
     textAlign: 'right',
-    color: '#202223',
-  },
-  formSubtitleContainer: {
-    alignItems: 'flex-end', // ב-RTL, flex-end = ימין המסך
-    marginBottom: spacing[6],
+    writingDirection: 'rtl',
+    alignSelf: 'flex-start',
+    marginBottom: dt.spacing[1],
   },
   formSubtitle: {
+    fontSize: 14,
+    color: dt.colors.ink[400],
     textAlign: 'right',
+    writingDirection: 'rtl',
+    alignSelf: 'flex-start',
+    marginBottom: dt.spacing[6],
   },
   form: {
-    gap: spacing[4],
-    
-  },
-  formInputs: {
-    
+    gap: dt.spacing[2],
   },
   errorContainer: {
-    backgroundColor: '#FEF2F2',
-    padding: spacing[3],
-    borderRadius: borderRadius.md,
-    borderWidth: 1,
-    borderColor: '#FECACA',
-    flexDirection: 'row', // ב-RTL, row = ימין לשמאל (טקסט מימין, אייקון משמאל)
+    backgroundColor: dt.colors.semantic.danger.light,
+    padding: dt.spacing[3],
+    borderRadius: dt.radii.md,
+    flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing[2],
+    gap: dt.spacing[2],
   },
   errorText: {
     flex: 1,
+    fontSize: 13,
+    color: dt.colors.semantic.danger.DEFAULT,
     textAlign: 'right',
-  },
-  loginButton: {
-    marginTop: spacing[2],
-    backgroundColor: '#00785C',
   },
   forgotPassword: {
     alignItems: 'center',
-    marginTop: spacing[2],
+    paddingVertical: dt.spacing[2],
   },
-  footer: {
-    flexDirection: 'column-reverse', // ב-RTL, row = ימין לשמאל
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: spacing[4],
+  forgotPasswordText: {
+    fontSize: 14,
+    color: dt.colors.brand[500],
+    fontFamily: fonts.medium,
   },
-  version: {
+
+  // Legal
+  legalSection: {
     alignItems: 'center',
-    paddingTop: spacing[2],
-    paddingBottom: spacing[4],
+    marginTop: dt.spacing[4],
+    paddingBottom: dt.spacing[6],
+    gap: dt.spacing[2],
+  },
+  legalLinks: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: dt.spacing[1],
+  },
+  legalLink: {
+    fontSize: 12,
+    color: dt.colors.ink[400],
+    fontFamily: fonts.medium,
+  },
+  legalSeparator: {
+    fontSize: 12,
+    color: dt.colors.ink[400],
+  },
+  legalNote: {
+    fontSize: 11,
+    color: dt.colors.ink[400],
+    textAlign: 'center',
+    lineHeight: 16,
   },
 });
-

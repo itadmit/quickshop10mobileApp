@@ -10,7 +10,7 @@ export const dashboardKeys = {
 };
 
 // ============ Hooks ============
-export function useDashboardSummary(period: 'today' | 'week' | 'month' = 'today') {
+export function useDashboardSummary(period: 'today' | 'week' | 'month' | 'year' = 'today') {
   return useQuery({
     queryKey: dashboardKeys.summary(period),
     queryFn: () => analyticsApi.getDashboardSummary({ period }),
