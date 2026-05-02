@@ -408,6 +408,8 @@ const styles = StyleSheet.create({
     fontFamily: fonts.medium,
     color: dt.colors.ink[500],
     textAlign: 'right',
+    writingDirection: 'rtl',
+    alignSelf: 'stretch',
     marginBottom: dt.spacing[2],
     paddingHorizontal: dt.spacing[1],
   },
