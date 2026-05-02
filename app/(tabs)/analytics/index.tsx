@@ -7,677 +7,456 @@ import {
   RefreshControl,
   TouchableOpacity,
   Dimensions,
-  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useFullAnalytics, useTopProducts } from '@/hooks';
+import { useRouter } from 'expo-router';
+import { useFullAnalytics } from '@/hooks';
 import {
   Text,
-  LoadingScreen,
   ScreenHeader,
+  StatCard,
   designTokens,
   fonts,
 } from '@/components/ui';
+import { SkeletonRow, SkeletonCard } from '@/components/ui/Skeleton';
 import { formatCurrency } from '@/lib/utils/format';
+import { showToast } from '@/lib/utils/toast';
 
 const { width } = Dimensions.get('window');
 const dt = designTokens;
-const mono = Platform.OS === 'ios' ? 'Menlo' : 'monospace';
+const tileWidth = (width - dt.spacing[4] * 2 - dt.spacing[3]) / 2;
 
 type Period = 'today' | 'week' | 'month' | 'year';
-
 const PERIODS: { key: Period; label: string }[] = [
-  { key: 'today', label: '\u05D4\u05D9\u05D5\u05DD' },
-  { key: 'week', label: '\u05E9\u05D1\u05D5\u05E2' },
-  { key: 'month', label: '\u05D7\u05D5\u05D3\u05E9' },
-  { key: 'year', label: '\u05E9\u05E0\u05D4' },
+  { key: 'today', label: 'היום' },
+  { key: 'week', label: 'שבוע' },
+  { key: 'month', label: 'חודש' },
+  { key: 'year', label: 'שנה' },
 ];
 
-function getDateRange(period: Period): { dateFrom: string; dateTo: string; label: string } {
-  const now = new Date();
-  const pad = (n: number) => n.toString().padStart(2, '0');
-  const fmt = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-  const fmtShort = (d: Date) => `${pad(d.getDate())}/${pad(d.getMonth() + 1)}`;
-
-  const dateTo = fmt(now);
-
-  switch (period) {
-    case 'today': {
-      return { dateFrom: dateTo, dateTo, label: fmtShort(now) };
-    }
-    case 'week': {
-      const weekAgo = new Date(now);
-      weekAgo.setDate(weekAgo.getDate() - 7);
-      return { dateFrom: fmt(weekAgo), dateTo, label: `${fmtShort(weekAgo)} - ${fmtShort(now)}` };
-    }
-    case 'month': {
-      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-      return { dateFrom: fmt(startOfMonth), dateTo, label: `${fmtShort(startOfMonth)} - ${fmtShort(now)}` };
-    }
-    case 'year': {
-      const startOfYear = new Date(now.getFullYear(), 0, 1);
-      return { dateFrom: fmt(startOfYear), dateTo, label: `${fmtShort(startOfYear)} - ${fmtShort(now)}` };
-    }
-  }
+interface ReportLink {
+  key: string;
+  title: string;
+  description: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  color: string;
+  /** If null, the card is shown as "בקרוב" (coming soon). */
+  href: string | null;
+  badge?: string;
 }
 
-export default function AnalyticsScreen() {
+function getReportLinks(): ReportLink[] {
+  return [
+    {
+      key: 'sales',
+      title: 'מכירות',
+      description: 'הכנסות, הזמנות, מוצרים מובילים',
+      icon: 'trending-up-outline',
+      color: dt.colors.brand[500],
+      href: '/(tabs)/analytics/sales',
+    },
+    {
+      key: 'products',
+      title: 'מוצרים',
+      description: 'דוח מכירות לפי מוצר',
+      icon: 'cube-outline',
+      color: dt.colors.semantic.success.DEFAULT,
+      href: '/(tabs)/analytics/products',
+      badge: 'חדש',
+    },
+    {
+      key: 'customers',
+      title: 'לקוחות',
+      description: 'פילוח, VIP, חוזרים',
+      icon: 'people-outline',
+      color: dt.colors.semantic.info.DEFAULT,
+      href: '/(tabs)/analytics/customers',
+    },
+    {
+      key: 'inventory',
+      title: 'מלאי',
+      description: 'מלאי נמוך, אזל, צילום מלאי',
+      icon: 'archive-outline',
+      color: dt.colors.semantic.warning.DEFAULT,
+      href: '/(tabs)/analytics/inventory',
+    },
+    {
+      key: 'coupons',
+      title: 'קופונים',
+      description: 'שימוש, הנחות, ביצועים',
+      icon: 'pricetag-outline',
+      color: dt.colors.accent[500],
+      href: '/(tabs)/analytics/coupons',
+    },
+    {
+      key: 'shipping',
+      title: 'משלוחים',
+      description: 'משלוח חינם, ממוצע, ספקים',
+      icon: 'car-outline',
+      color: dt.colors.semantic.info.dark,
+      href: null,
+    },
+    {
+      key: 'financial',
+      title: 'דוח פיננסי',
+      description: 'החזרים, גיפט קארדים, זיכויים',
+      icon: 'cash-outline',
+      color: dt.colors.semantic.success.dark,
+      href: null,
+    },
+    {
+      key: 'gift-cards',
+      title: 'גיפט קארדים',
+      description: 'יתרה, שימוש, תנועות',
+      icon: 'gift-outline',
+      color: '#9333EA',
+      href: null,
+    },
+    {
+      key: 'traffic',
+      title: 'תנועה',
+      description: 'מקורות, מכשירים, דפי נחיתה',
+      icon: 'globe-outline',
+      color: '#0891B2',
+      href: null,
+    },
+    {
+      key: 'utm',
+      title: 'UTM מפורט',
+      description: 'קמפיינים, מקורות, מילות מפתח',
+      icon: 'link-outline',
+      color: '#DB2777',
+      href: null,
+    },
+    {
+      key: 'behavior',
+      title: 'התנהגות',
+      description: 'משפך המרה, חיפושים, נטישות',
+      icon: 'compass-outline',
+      color: '#65A30D',
+      href: null,
+    },
+    {
+      key: 'realtime',
+      title: 'זמן אמת',
+      description: 'מבקרים פעילים, מכירות חיות',
+      icon: 'flash-outline',
+      color: dt.colors.semantic.warning.DEFAULT,
+      href: null,
+    },
+    {
+      key: 'addons',
+      title: 'תוספות',
+      description: 'הכנסות מתוספות מוצר',
+      icon: 'add-circle-outline',
+      color: dt.colors.brand[700],
+      href: null,
+    },
+  ];
+}
+
+export default function AnalyticsHubScreen() {
+  const router = useRouter();
   const [selectedPeriod, setSelectedPeriod] = useState<Period>('week');
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const dateRange = getDateRange(selectedPeriod);
-
   const { data: analytics, isLoading, refetch } = useFullAnalytics({
     period: selectedPeriod,
-    dateFrom: dateRange.dateFrom,
-    dateTo: dateRange.dateTo,
   });
-  const { data: topProducts, refetch: refetchTopProducts } = useTopProducts({ period: selectedPeriod, limit: 5 });
 
-  const handleRefresh = useCallback(async () => {
+  const onRefresh = useCallback(async () => {
     setIsRefreshing(true);
-    try {
-      await Promise.all([refetch(), refetchTopProducts()]);
-    } finally {
-      setIsRefreshing(false);
-    }
-  }, [refetch, refetchTopProducts]);
-
-  if (isLoading) {
-    return <LoadingScreen message="\u05D8\u05D5\u05E2\u05DF \u05E0\u05EA\u05D5\u05E0\u05D9\u05DD..." />;
-  }
+    try { await refetch(); } finally { setIsRefreshing(false); }
+  }, [refetch]);
 
   const summary = analytics?.summary;
+  const links = getReportLinks();
+
+  const handleCardPress = (link: ReportLink) => {
+    if (!link.href) {
+      showToast('הדוח יזמין בקרוב', 'info');
+      return;
+    }
+    router.push(link.href as never);
+  };
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <ScreenHeader title="דוחות ואנליטיקס" />
+      <ScreenHeader title="דוחות ואנליטיקס" onBack={null} />
       <ScrollView
-        style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
             refreshing={isRefreshing}
-            onRefresh={handleRefresh}
+            onRefresh={onRefresh}
             tintColor={dt.colors.brand[500]}
-            colors={[dt.colors.brand[500]]}
-
           />
         }
       >
-        {/* Period Selector */}
-        <View style={styles.periodSelector}>
-          {PERIODS.map((period) => (
+        {/* Period selector */}
+        <View style={styles.periodRow}>
+          {PERIODS.map((p) => {
+            const active = selectedPeriod === p.key;
+            return (
+              <TouchableOpacity
+                key={p.key}
+                style={[styles.periodPill, active && styles.periodPillActive]}
+                onPress={() => setSelectedPeriod(p.key)}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.periodText, active && styles.periodTextActive]}>
+                  {p.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+
+        {/* Hero KPIs */}
+        {isLoading ? (
+          <SkeletonCard style={styles.heroSkeleton}>
+            <SkeletonRow width="40%" height={16} />
+            <SkeletonRow width="80%" height={32} />
+            <SkeletonRow width="50%" height={14} />
+          </SkeletonCard>
+        ) : (
+          <View style={styles.heroCard}>
+            <Text style={styles.heroLabel}>סך הכנסות</Text>
+            <Text style={styles.heroValue}>{formatCurrency(summary?.revenue ?? 0)}</Text>
+            {typeof summary?.revenueChange === 'number' && summary.revenueChange !== 0 && (
+              <View style={styles.heroChangeRow}>
+                <Ionicons
+                  name={summary.revenueChange >= 0 ? 'arrow-up' : 'arrow-down'}
+                  size={14}
+                  color={
+                    summary.revenueChange >= 0
+                      ? dt.colors.semantic.success.DEFAULT
+                      : dt.colors.semantic.danger.DEFAULT
+                  }
+                />
+                <Text
+                  style={[
+                    styles.heroChange,
+                    {
+                      color:
+                        summary.revenueChange >= 0
+                          ? dt.colors.semantic.success.DEFAULT
+                          : dt.colors.semantic.danger.DEFAULT,
+                    },
+                  ]}
+                >
+                  {Math.abs(summary.revenueChange)}% מהתקופה הקודמת
+                </Text>
+              </View>
+            )}
+          </View>
+        )}
+
+        {/* Quick KPI tiles */}
+        <View style={styles.kpiGrid}>
+          <View style={styles.kpiTile}>
+            <StatCard
+              label="הזמנות"
+              value={String(summary?.orders ?? 0)}
+              icon={<Ionicons name="cart-outline" size={18} color={dt.colors.brand[500]} />}
+              accentColor={dt.colors.brand[500]}
+            />
+          </View>
+          <View style={styles.kpiTile}>
+            <StatCard
+              label="לקוחות חדשים"
+              value={String(summary?.customers ?? 0)}
+              icon={<Ionicons name="people-outline" size={18} color={dt.colors.semantic.info.DEFAULT} />}
+              accentColor={dt.colors.semantic.info.DEFAULT}
+            />
+          </View>
+          <View style={styles.kpiTile}>
+            <StatCard
+              label="ממוצע להזמנה"
+              value={formatCurrency(summary?.avgOrderValue ?? 0)}
+              icon={<Ionicons name="analytics-outline" size={18} color={dt.colors.accent[500]} />}
+              accentColor={dt.colors.accent[500]}
+            />
+          </View>
+          <View style={styles.kpiTile}>
+            <StatCard
+              label="המרה"
+              value={`${(summary?.conversionRate ?? 0).toFixed(1)}%`}
+              icon={<Ionicons name="trending-up-outline" size={18} color={dt.colors.semantic.warning.DEFAULT} />}
+              accentColor={dt.colors.semantic.warning.DEFAULT}
+            />
+          </View>
+        </View>
+
+        {/* Reports grid */}
+        <Text style={styles.sectionTitle}>כל הדוחות</Text>
+        <View style={styles.reportsGrid}>
+          {links.map((link) => (
             <TouchableOpacity
-              key={period.key}
-              style={[
-                styles.periodButton,
-                selectedPeriod === period.key && styles.periodButtonActive
-              ]}
-              onPress={() => setSelectedPeriod(period.key)}
+              key={link.key}
+              style={[styles.reportCard, { width: tileWidth }]}
+              onPress={() => handleCardPress(link)}
+              activeOpacity={0.75}
             >
-              <Text style={[
-                styles.periodText,
-                selectedPeriod === period.key && styles.periodTextActive
-              ]}>
-                {period.label}
-              </Text>
+              <View style={[styles.reportIconBox, { backgroundColor: `${link.color}14` }]}>
+                <Ionicons name={link.icon} size={22} color={link.color} />
+              </View>
+              <View style={styles.reportTextWrap}>
+                <View style={styles.reportTitleRow}>
+                  <Text style={styles.reportTitle}>{link.title}</Text>
+                  {link.badge ? (
+                    <View style={styles.reportBadge}>
+                      <Text style={styles.reportBadgeText}>{link.badge}</Text>
+                    </View>
+                  ) : null}
+                  {!link.href ? (
+                    <View style={[styles.reportBadge, styles.reportBadgeMuted]}>
+                      <Text style={[styles.reportBadgeText, styles.reportBadgeTextMuted]}>בקרוב</Text>
+                    </View>
+                  ) : null}
+                </View>
+                <Text style={styles.reportDescription} numberOfLines={2}>
+                  {link.description}
+                </Text>
+              </View>
             </TouchableOpacity>
           ))}
         </View>
 
-        {/* Date Range Label */}
-        <Text style={styles.dateRangeLabel}>{dateRange.label}</Text>
-
-        {/* Revenue Card */}
-        <View style={styles.revenueCard}>
-          <View style={styles.revenueHeader}>
-            <View style={styles.revenueIconBox}>
-              <Ionicons name="trending-up" size={20} color={dt.colors.semantic.success.DEFAULT} />
-            </View>
-            <Text style={styles.revenueLabel}>{'\u05E1\u05DA \u05D4\u05DB\u05E0\u05E1\u05D5\u05EA'}</Text>
-          </View>
-          <Text style={styles.revenueValue}>
-            {formatCurrency(summary?.revenue || 0)}
-          </Text>
-          {summary?.revenueChange !== undefined && (
-            <View style={styles.changeRow}>
-              <Ionicons
-                name={summary.revenueChange >= 0 ? 'arrow-up' : 'arrow-down'}
-                size={14}
-                color={summary.revenueChange >= 0 ? dt.colors.semantic.success.DEFAULT : dt.colors.semantic.danger.DEFAULT}
-              />
-              <Text style={[
-                styles.changeText,
-                { color: summary.revenueChange >= 0 ? dt.colors.semantic.success.DEFAULT : dt.colors.semantic.danger.DEFAULT }
-              ]}>
-                {Math.abs(summary.revenueChange)}% {'\u05DE\u05D4\u05EA\u05E7\u05D5\u05E4\u05D4 \u05D4\u05E7\u05D5\u05D3\u05DE\u05EA'}
-              </Text>
-            </View>
-          )}
-        </View>
-
-        {/* Stats Grid */}
-        <View style={styles.statsGrid}>
-          <StatCard
-            icon="cart-outline"
-            label={'\u05D4\u05D6\u05DE\u05E0\u05D5\u05EA'}
-            value={String(summary?.orders || 0)}
-            change={summary?.ordersChange}
-            color={dt.colors.brand[500]}
-          />
-          <StatCard
-            icon="people-outline"
-            label={'\u05DC\u05E7\u05D5\u05D7\u05D5\u05EA'}
-            value={String(summary?.customers || 0)}
-            change={summary?.customersChange}
-            color={dt.colors.semantic.info.DEFAULT}
-          />
-          <StatCard
-            icon="cash-outline"
-            label={'\u05DE\u05DE\u05D5\u05E6\u05E2 \u05DC\u05D4\u05D6\u05DE\u05E0\u05D4'}
-            value={formatCurrency(summary?.avgOrderValue || 0)}
-            change={summary?.avgOrderValueChange}
-            color={dt.colors.accent[500]}
-          />
-          <StatCard
-            icon="analytics-outline"
-            label={'\u05D4\u05DE\u05E8\u05D4'}
-            value={`${summary?.conversionRate || 0}%`}
-            change={summary?.conversionRateChange}
-            color={dt.colors.semantic.warning.DEFAULT}
-          />
-        </View>
-
-        {/* Customer Segments */}
-        {analytics?.customerSegments && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>{'\u05E4\u05D9\u05DC\u05D5\u05D7 \u05DC\u05E7\u05D5\u05D7\u05D5\u05EA'}</Text>
-            <View style={styles.segmentsCard}>
-              <SegmentBar
-                label={'\u05DC\u05E7\u05D5\u05D7\u05D5\u05EA \u05D7\u05D3\u05E9\u05D9\u05DD'}
-                value={analytics.customerSegments.new}
-                total={
-                  analytics.customerSegments.new +
-                  analytics.customerSegments.returning +
-                  analytics.customerSegments.inactive
-                }
-                color={dt.colors.semantic.success.DEFAULT}
-              />
-              <SegmentBar
-                label={'\u05DC\u05E7\u05D5\u05D7\u05D5\u05EA \u05D7\u05D5\u05D6\u05E8\u05D9\u05DD'}
-                value={analytics.customerSegments.returning}
-                total={
-                  analytics.customerSegments.new +
-                  analytics.customerSegments.returning +
-                  analytics.customerSegments.inactive
-                }
-                color={dt.colors.brand[500]}
-              />
-              <SegmentBar
-                label={'\u05DC\u05E7\u05D5\u05D7\u05D5\u05EA \u05DC\u05D0 \u05E4\u05E2\u05D9\u05DC\u05D9\u05DD'}
-                value={analytics.customerSegments.inactive}
-                total={
-                  analytics.customerSegments.new +
-                  analytics.customerSegments.returning +
-                  analytics.customerSegments.inactive
-                }
-                color={dt.colors.ink[300]}
-              />
-            </View>
-          </View>
-        )}
-
-        {/* Top Products */}
-        {topProducts && topProducts.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>{'\u05DE\u05D5\u05E6\u05E8\u05D9\u05DD \u05DE\u05D5\u05D1\u05D9\u05DC\u05D9\u05DD'}</Text>
-            <View style={styles.topProductsCard}>
-              {topProducts.map((product, index) => (
-                <View
-                  key={product.id}
-                  style={[
-                    styles.productRow,
-                    index < topProducts.length - 1 && styles.productRowBorder
-                  ]}
-                >
-                  <Text style={styles.productRevenue}>
-                    {formatCurrency(product.revenue)}
-                  </Text>
-                  <View style={styles.productInfo}>
-                    <View style={styles.productRank}>
-                      <Text style={styles.rankText}>{index + 1}</Text>
-                    </View>
-                    <View style={styles.productDetails}>
-                      <Text style={styles.productName} numberOfLines={1}>
-                        {product.name}
-                      </Text>
-                      <Text style={styles.productStats}>
-                        {product.quantity} {'\u05D9\u05D7\u05D9\u05D3\u05D5\u05EA'} {'\u2022'} {product.ordersCount} {'\u05D4\u05D6\u05DE\u05E0\u05D5\u05EA'}
-                      </Text>
-                    </View>
-                  </View>
-                </View>
-              ))}
-            </View>
-          </View>
-        )}
-
-        {/* Top Categories */}
-        {analytics?.topCategories && analytics.topCategories.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>{'\u05E7\u05D8\u05D2\u05D5\u05E8\u05D9\u05D5\u05EA \u05DE\u05D5\u05D1\u05D9\u05DC\u05D5\u05EA'}</Text>
-            <View style={styles.categoriesCard}>
-              {analytics.topCategories.slice(0, 5).map((category, index) => (
-                <View
-                  key={category.id}
-                  style={[
-                    styles.categoryRow,
-                    index < Math.min(analytics.topCategories.length - 1, 4) && styles.categoryRowBorder
-                  ]}
-                >
-                  <Text style={styles.categoryRevenue}>
-                    {formatCurrency(category.revenue)}
-                  </Text>
-                  <View style={styles.categoryInfo}>
-                    <Text style={styles.categoryName}>{category.name}</Text>
-                    <Text style={styles.categoryOrders}>
-                      {category.ordersCount} {'\u05D4\u05D6\u05DE\u05E0\u05D5\u05EA'}
-                    </Text>
-                  </View>
-                </View>
-              ))}
-            </View>
-          </View>
-        )}
-
-        <View style={{ height: dt.spacing[10] }} />
+        <View style={{ height: dt.spacing[8] }} />
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-// Stat Card Component
-function StatCard({
-  icon,
-  label,
-  value,
-  change,
-  color,
-}: {
-  icon: keyof typeof Ionicons.glyphMap;
-  label: string;
-  value: string;
-  change?: number;
-  color: string;
-}) {
-  return (
-    <View style={styles.statCard}>
-      <View style={[styles.statIcon, { backgroundColor: `${color}15` }]}>
-        <Ionicons name={icon} size={20} color={color} />
-      </View>
-      <Text style={styles.statValue}>{value}</Text>
-      <Text style={styles.statLabel}>{label}</Text>
-      {change !== undefined && (
-        <View style={styles.statChange}>
-          <Ionicons
-            name={change >= 0 ? 'arrow-up' : 'arrow-down'}
-            size={10}
-            color={change >= 0 ? dt.colors.semantic.success.DEFAULT : dt.colors.semantic.danger.DEFAULT}
-          />
-          <Text style={[
-            styles.statChangeText,
-            { color: change >= 0 ? dt.colors.semantic.success.DEFAULT : dt.colors.semantic.danger.DEFAULT }
-          ]}>
-            {Math.abs(change)}%
-          </Text>
-        </View>
-      )}
-    </View>
-  );
-}
-
-// Segment Bar Component
-function SegmentBar({
-  label,
-  value,
-  total,
-  color,
-}: {
-  label: string;
-  value: number;
-  total: number;
-  color: string;
-}) {
-  const percentage = total > 0 ? (value / total) * 100 : 0;
-
-  return (
-    <View style={styles.segmentRow}>
-      <Text style={styles.segmentValue}>{value}</Text>
-      <View style={styles.segmentBarContainer}>
-        <View style={styles.segmentInfo}>
-          <Text style={styles.segmentLabel}>{label}</Text>
-          <Text style={styles.segmentPercent}>{percentage.toFixed(0)}%</Text>
-        </View>
-        <View style={styles.segmentBarBg}>
-          <View
-            style={[
-              styles.segmentBarFill,
-              { width: `${percentage}%`, backgroundColor: color }
-            ]}
-          />
-        </View>
-      </View>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: dt.colors.surface.background,
-  },
-  scrollView: {
-    flex: 1,
-  },
+  container: { flex: 1, backgroundColor: dt.colors.surface.background },
   scrollContent: {
     padding: dt.spacing[4],
+    gap: dt.spacing[4],
   },
-
-  // Period Selector
-  periodSelector: {
+  periodRow: {
     flexDirection: 'row',
-    backgroundColor: dt.colors.ink[50],
-    borderRadius: dt.radii.md,
-    borderWidth: 1,
-    borderColor: dt.colors.ink[200],
-    padding: 4,
-    marginBottom: dt.spacing[4],
+    gap: dt.spacing[2],
   },
-  periodButton: {
+  periodPill: {
     flex: 1,
     paddingVertical: dt.spacing[2],
+    borderRadius: dt.radii.full,
+    backgroundColor: dt.colors.ink[50],
     alignItems: 'center',
-    borderRadius: dt.radii.sm,
   },
-  periodButtonActive: {
+  periodPillActive: {
     backgroundColor: dt.colors.brand[500],
   },
   periodText: {
     fontSize: 13,
     fontFamily: fonts.medium,
-    color: dt.colors.ink[400],
+    color: dt.colors.ink[600],
   },
   periodTextActive: {
     color: dt.colors.surface.onBrand,
-    fontFamily: fonts.semiBold,
   },
-
-  // Date Range Label
-  dateRangeLabel: {
-    textAlign: 'center',
-    fontSize: 12,
-    fontFamily: fonts.medium,
-    color: dt.colors.ink[400],
-    marginBottom: dt.spacing[3],
-    marginTop: -dt.spacing[2],
-  },
-
-  // Revenue Card
-  revenueCard: {
+  heroCard: {
     backgroundColor: dt.colors.surface.card,
     borderRadius: dt.radii.lg,
-    borderWidth: 1,
-    borderColor: dt.colors.ink[200],
     padding: dt.spacing[5],
-    marginBottom: dt.spacing[4],
-  },
-  revenueHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: dt.spacing[3],
-  },
-  revenueLabel: {
-    fontSize: 14,
-    color: dt.colors.ink[500],
-    fontFamily: fonts.medium,
-  },
-  revenueIconBox: {
-    width: 36,
-    height: 36,
-    borderRadius: dt.radii.sm,
-    backgroundColor: dt.colors.semantic.success.light,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  revenueValue: {
-    fontSize: 36,
-    fontFamily: mono,
-    fontWeight: '700',
-    color: dt.colors.ink[950],
-    textAlign: 'right',
-  },
-  changeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
+    alignItems: 'flex-end',
     gap: dt.spacing[1],
-    marginTop: dt.spacing[2],
   },
-  changeText: {
+  heroSkeleton: {
+    gap: dt.spacing[2],
+    padding: dt.spacing[5],
+  },
+  heroLabel: {
     fontSize: 13,
+    color: dt.colors.ink[500],
+  },
+  heroValue: {
+    fontSize: 32,
+    fontFamily: fonts.bold,
+    color: dt.colors.ink[950],
+  },
+  heroChangeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: dt.spacing[1],
+  },
+  heroChange: {
+    fontSize: 12,
     fontFamily: fonts.medium,
   },
-
-  // Stats Grid
-  statsGrid: {
+  kpiGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: dt.spacing[3],
-    marginBottom: dt.spacing[4],
   },
-  statCard: {
-    width: (width - dt.spacing[4] * 2 - dt.spacing[3]) / 2,
-    backgroundColor: dt.colors.surface.card,
-    borderRadius: dt.radii.lg,
-    borderWidth: 1,
-    borderColor: dt.colors.ink[200],
-    padding: dt.spacing[4],
-    alignItems: 'flex-end',
-  },
-  statIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: dt.radii.sm,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: dt.spacing[2],
-  },
-  statValue: {
-    fontSize: 22,
-    fontFamily: fonts.bold,
-    color: dt.colors.ink[950],
-  },
-  statLabel: {
-    fontSize: 12,
-    color: dt.colors.ink[400],
-    fontFamily: fonts.regular,
-    marginTop: dt.spacing[1],
-    textAlign: 'right',
-  },
-  statChange: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 2,
-    marginTop: dt.spacing[1],
-  },
-  statChangeText: {
-    fontSize: 11,
-    fontFamily: fonts.medium,
-  },
-
-  // Section
-  section: {
-    marginBottom: dt.spacing[4],
+  kpiTile: {
+    width: tileWidth,
+    height: 100,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 15,
     fontFamily: fonts.semiBold,
     color: dt.colors.ink[950],
     textAlign: 'right',
-    marginBottom: dt.spacing[3],
+    marginTop: dt.spacing[2],
   },
-
-  // Segments
-  segmentsCard: {
-    backgroundColor: dt.colors.surface.card,
-    borderRadius: dt.radii.lg,
-    borderWidth: 1,
-    borderColor: dt.colors.ink[200],
-    padding: dt.spacing[4],
-    gap: dt.spacing[4],
-  },
-  segmentRow: {
+  reportsGrid: {
     flexDirection: 'row',
-    alignItems: 'center',
+    flexWrap: 'wrap',
     gap: dt.spacing[3],
   },
-  segmentBarContainer: {
-    flex: 1,
+  reportCard: {
+    backgroundColor: dt.colors.surface.card,
+    borderRadius: dt.radii.lg,
+    padding: dt.spacing[3],
+    gap: dt.spacing[2],
   },
-  segmentInfo: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: dt.spacing[1],
-  },
-  segmentLabel: {
-    fontSize: 13,
-    color: dt.colors.ink[500],
-    fontFamily: fonts.medium,
-    textAlign: 'right',
-  },
-  segmentPercent: {
-    fontSize: 13,
-    color: dt.colors.ink[400],
-    fontFamily: fonts.regular,
-  },
-  segmentBarBg: {
-    height: 8,
-    backgroundColor: dt.colors.ink[100],
-    borderRadius: 4,
-    overflow: 'hidden',
-  },
-  segmentBarFill: {
-    height: '100%',
-    borderRadius: 4,
-  },
-  segmentValue: {
-    fontSize: 16,
-    fontFamily: fonts.bold,
-    color: dt.colors.ink[950],
+  reportIconBox: {
     width: 40,
-    textAlign: 'center',
-  },
-
-  // Top Products
-  topProductsCard: {
-    backgroundColor: dt.colors.surface.card,
-    borderRadius: dt.radii.lg,
-    borderWidth: 1,
-    borderColor: dt.colors.ink[200],
-    overflow: 'hidden',
-  },
-  productRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: dt.spacing[4],
-    gap: dt.spacing[3],
-  },
-  productRowBorder: {
-    borderBottomWidth: 1,
-    borderBottomColor: dt.colors.ink[200],
-  },
-  productInfo: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: dt.spacing[3],
-  },
-  productRank: {
-    width: 28,
-    height: 28,
-    borderRadius: dt.radii.sm,
-    backgroundColor: dt.colors.ink[100],
+    height: 40,
+    borderRadius: dt.radii.md,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  rankText: {
-    fontSize: 13,
-    fontFamily: fonts.bold,
-    color: dt.colors.ink[500],
+  reportTextWrap: {
+    gap: 2,
   },
-  productDetails: {
-    flex: 1,
-    alignItems: 'flex-end',
-  },
-  productName: {
-    fontSize: 14,
-    fontFamily: fonts.semiBold,
-    color: dt.colors.ink[950],
-    textAlign: 'right',
-  },
-  productStats: {
-    fontSize: 12,
-    color: dt.colors.ink[400],
-    marginTop: 2,
-    textAlign: 'right',
-  },
-  productRevenue: {
-    fontSize: 14,
-    fontFamily: mono,
-    fontWeight: '700',
-    color: dt.colors.brand[500],
-  },
-
-  // Categories
-  categoriesCard: {
-    backgroundColor: dt.colors.surface.card,
-    borderRadius: dt.radii.lg,
-    borderWidth: 1,
-    borderColor: dt.colors.ink[200],
-    overflow: 'hidden',
-  },
-  categoryRow: {
+  reportTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: dt.spacing[4],
+    gap: 6,
   },
-  categoryRowBorder: {
-    borderBottomWidth: 1,
-    borderBottomColor: dt.colors.ink[200],
-  },
-  categoryInfo: {
-    alignItems: 'flex-end',
-  },
-  categoryName: {
+  reportTitle: {
     fontSize: 14,
     fontFamily: fonts.semiBold,
     color: dt.colors.ink[950],
     textAlign: 'right',
   },
-  categoryOrders: {
-    fontSize: 12,
-    color: dt.colors.ink[400],
-    marginTop: 2,
-    textAlign: 'right',
+  reportBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: dt.radii.sm,
+    backgroundColor: dt.colors.brand[50],
   },
-  categoryRevenue: {
-    fontSize: 14,
-    fontFamily: mono,
-    fontWeight: '700',
-    color: dt.colors.brand[500],
+  reportBadgeMuted: {
+    backgroundColor: dt.colors.ink[100],
+  },
+  reportBadgeText: {
+    fontSize: 9,
+    fontFamily: fonts.medium,
+    color: dt.colors.brand[700],
+  },
+  reportBadgeTextMuted: {
+    color: dt.colors.ink[500],
+  },
+  reportDescription: {
+    fontSize: 11,
+    color: dt.colors.ink[500],
+    lineHeight: 14,
+    textAlign: 'right',
   },
 });
