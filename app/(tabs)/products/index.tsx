@@ -35,6 +35,11 @@ const { colors, spacing, radii } = designTokens;
 const monoFont = Platform.OS === 'ios' ? 'Menlo' : 'monospace';
 
 function getStockInfo(product: Product) {
+  // Products without inventory tracking shouldn't show stock status
+  // (a missing inventory count is not the same as "out of stock").
+  if (!product.hasVariants && !product.trackInventory) {
+    return null;
+  }
   const inventory = product.hasVariants
     ? product.variantTotalInventory ?? null
     : product.inventory ?? null;
