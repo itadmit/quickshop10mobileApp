@@ -65,6 +65,7 @@ export {
   useProcessReturn,
   usePendingInventory,
   useActOnPendingItem,
+  useCreateReturnRequest,
   returnsKeys,
 } from './useReturns';
 

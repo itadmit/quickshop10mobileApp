@@ -6,6 +6,7 @@ export default function ReturnsLayout() {
       <Stack.Screen name="index" options={{ headerShown: false }} />
       <Stack.Screen name="[id]" options={{ headerShown: false }} />
       <Stack.Screen name="pending" options={{ headerShown: false }} />
+      <Stack.Screen name="new" options={{ headerShown: false }} />
     </Stack>
   );
 }

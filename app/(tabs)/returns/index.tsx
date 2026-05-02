@@ -72,7 +72,19 @@ export default function ReturnsListScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <ScreenHeader title="החזרות והחלפות" />
+      <ScreenHeader
+        title="החזרות והחלפות"
+        trailing={
+          <TouchableOpacity
+            onPress={() => router.push('/(tabs)/returns/new')}
+            hitSlop={10}
+            accessibilityLabel="בקשה חדשה"
+            style={styles.addBtn}
+          >
+            <Ionicons name="add" size={22} color={dt.colors.surface.onBrand} />
+          </TouchableOpacity>
+        }
+      />
 
       {/* Pending inventory pill */}
       {pending && pending.pendingCount > 0 && (
@@ -165,6 +177,14 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: dt.colors.surface.background,
+  },
+  addBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: dt.colors.brand[500],
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   pendingBanner: {
     flexDirection: 'row',

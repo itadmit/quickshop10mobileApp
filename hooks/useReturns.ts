@@ -87,3 +87,13 @@ export function useActOnPendingItem() {
     },
   });
 }
+
+export function useCreateReturnRequest() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: returnsApi.createReturnRequest,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: returnsKeys.lists() });
+    },
+  });
+}

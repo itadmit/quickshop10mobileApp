@@ -190,3 +190,38 @@ export async function actOnPendingInventory(
 ): Promise<{ success: boolean; status?: string; error?: string }> {
   return api.post(`/mobile/returns/pending-inventory/${id}`, body);
 }
+
+export type ReturnReason =
+  | 'wrong_size'
+  | 'defective'
+  | 'not_as_described'
+  | 'changed_mind'
+  | 'wrong_item'
+  | 'damaged_shipping'
+  | 'other';
+
+export const RETURN_REASON_LABELS: Record<ReturnReason, string> = {
+  wrong_size: 'מידה לא מתאימה',
+  defective: 'פגם במוצר',
+  not_as_described: 'לא כמתואר',
+  changed_mind: 'שינוי דעה',
+  wrong_item: 'מוצר שגוי',
+  damaged_shipping: 'נזק במשלוח',
+  other: 'אחר',
+};
+
+export async function createReturnRequest(body: {
+  orderId: string;
+  type: ReturnRequestType;
+  items: Array<{ orderItemId: string; quantity: number }>;
+  reason: ReturnReason;
+  reasonDetails?: string;
+  requestedResolution?: 'refund' | 'store_credit' | 'exchange' | 'partial_refund';
+}): Promise<{
+  success: boolean;
+  requestId?: string;
+  requestNumber?: string;
+  error?: string;
+}> {
+  return api.post('/mobile/returns', body);
+}
