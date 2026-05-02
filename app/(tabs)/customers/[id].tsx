@@ -15,6 +15,7 @@ import { useCustomer, useAddCustomerCredit } from '@/hooks';
 import {
   Text,
   Button,
+  Card,
   Badge,
   StatusBadge,
   SectionHeader,
@@ -24,6 +25,7 @@ import {
 } from '@/components/ui';
 import { formatCurrency, formatDateTime, formatPhone, formatAddress } from '@/lib/utils/format';
 import { avatarColor } from '@/lib/utils/avatar';
+import { showToast } from '@/lib/utils/toast';
 
 // removed MONO_FONT - using fonts.bold for consistency
 
@@ -80,11 +82,11 @@ export default function CustomerDetailScreen() {
   const handleAddCredit = async () => {
     const amount = parseFloat(creditAmount);
     if (isNaN(amount) || amount <= 0) {
-      Alert.alert('שגיאה', 'נא להזין סכום חיובי');
+      showToast('נא להזין סכום חיובי', 'error');
       return;
     }
     if (!creditReason.trim()) {
-      Alert.alert('שגיאה', 'נא להזין סיבה');
+      showToast('נא להזין סיבה', 'error');
       return;
     }
 
@@ -96,9 +98,9 @@ export default function CustomerDetailScreen() {
       setShowAddCredit(false);
       setCreditAmount('');
       setCreditReason('');
-      Alert.alert('הצלחה', 'הקרדיט נוסף בהצלחה');
+      showToast('הקרדיט נוסף בהצלחה', 'success');
     } catch {
-      Alert.alert('שגיאה', 'לא הצלחנו להוסיף קרדיט');
+      showToast('לא הצלחנו להוסיף קרדיט', 'error');
     }
   };
 
@@ -114,7 +116,7 @@ export default function CustomerDetailScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* Header Card */}
-        <View style={styles.headerCard}>
+        <Card variant="outlined" padding={5} style={styles.headerCard}>
               <View style={[styles.avatarLarge, { backgroundColor: customerAvatarColor }]}>
             <Text style={styles.avatarText}>{fullName.charAt(0).toUpperCase()}</Text>
               </View>
@@ -148,10 +150,10 @@ export default function CustomerDetailScreen() {
               <Text style={styles.statLabel}>קרדיט</Text>
             </View>
           </View>
-        </View>
+        </Card>
 
         {/* Quick Actions */}
-        <View style={styles.actionsRow}>
+        <Card variant="outlined" padding={2} style={styles.actionsRow}>
           <TouchableOpacity style={styles.actionBtn} onPress={handleCall}>
             <View style={styles.actionIconCircle}>
               <Ionicons name="call-outline" size={20} color={designTokens.colors.ink[950]} />
@@ -176,11 +178,11 @@ export default function CustomerDetailScreen() {
             </View>
             <Text style={styles.actionLabel}>קרדיט</Text>
           </TouchableOpacity>
-        </View>
+        </Card>
 
         {/* Add Credit Form */}
         {showAddCredit && (
-          <View style={styles.creditFormCard}>
+          <Card variant="outlined">
             <SectionHeader title="הוספת קרדיט" />
             <View style={styles.creditForm}>
               <View style={styles.creditInputRow}>
@@ -222,13 +224,13 @@ export default function CustomerDetailScreen() {
                 </TouchableOpacity>
               </View>
             </View>
-          </View>
+          </Card>
         )}
 
         {/* Contact Info */}
         <View style={styles.section}>
           <SectionHeader title="פרטי קשר" />
-          <View style={styles.detailsCard}>
+          <Card variant="outlined" padding={0} style={styles.detailsCard}>
             {customer.phone && (
               <TouchableOpacity style={styles.detailRow} onPress={handleCall}>
                 <Ionicons name="call-outline" size={18} color={designTokens.colors.brand[500]} />
@@ -262,7 +264,7 @@ export default function CustomerDetailScreen() {
                 <Text style={styles.detailLabel}>הסכמה לדיוור</Text>
               </View>
             </View>
-          </View>
+          </Card>
         </View>
 
         {/* Orders */}
@@ -367,14 +369,9 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 
-  // Header Card
+  // Header Card (rendered via <Card variant="outlined" padding={5}>)
   headerCard: {
-    backgroundColor: designTokens.colors.surface.card,
-    borderRadius: designTokens.radii.lg,
-    padding: designTokens.spacing[5],
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: designTokens.colors.ink[200],
   },
   avatarLarge: {
     width: 72,
@@ -426,14 +423,9 @@ const styles = StyleSheet.create({
     marginHorizontal: designTokens.spacing[2],
   },
 
-  // Actions
+  // Actions (rendered via <Card variant="outlined" padding={2}>)
   actionsRow: {
     flexDirection: 'row',
-    backgroundColor: designTokens.colors.surface.card,
-    borderRadius: designTokens.radii.lg,
-    padding: designTokens.spacing[2],
-    borderWidth: 1,
-    borderColor: designTokens.colors.ink[200],
   },
   actionBtn: {
     flex: 1,
@@ -455,14 +447,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.medium,
   },
 
-  // Credit Form
-  creditFormCard: {
-    backgroundColor: designTokens.colors.surface.card,
-    borderRadius: designTokens.radii.lg,
-    padding: designTokens.spacing[4],
-    borderWidth: 1,
-    borderColor: designTokens.colors.ink[200],
-  },
+  // Credit Form (rendered via <Card variant="outlined">)
   creditForm: {
     gap: designTokens.spacing[3],
   },
@@ -514,13 +499,9 @@ const styles = StyleSheet.create({
     gap: designTokens.spacing[2],
   },
 
-  // Details
+  // Details (rendered via <Card variant="outlined" padding={0}>)
   detailsCard: {
-    backgroundColor: designTokens.colors.surface.card,
-    borderRadius: designTokens.radii.lg,
     overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: designTokens.colors.ink[200],
   },
   detailRow: {
     flexDirection: 'row',

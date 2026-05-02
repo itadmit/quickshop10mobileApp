@@ -275,10 +275,9 @@ const styles = StyleSheet.create({
 
   // Discount Card
   discountCard: {
+    marginBottom: dt.spacing[2],
     backgroundColor: dt.colors.surface.card,
     borderRadius: dt.radii.lg,
-    borderWidth: 1,
-    borderColor: dt.colors.ink[200],
     padding: dt.spacing[4],
     gap: dt.spacing[3],
   },

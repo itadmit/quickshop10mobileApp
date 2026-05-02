@@ -299,8 +299,7 @@ const styles = StyleSheet.create({
   orderCard: {
     marginBottom: spacing[2],
     backgroundColor: colors.surface.card,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.ink[100],
+    borderRadius: radii.lg,
     paddingHorizontal: spacing[4],
     paddingVertical: spacing[4],
     gap: spacing[2],

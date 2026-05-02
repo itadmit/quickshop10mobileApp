@@ -24,6 +24,7 @@ import {
 } from '@/components/ui';
 import { formatCurrency, formatDateTime, formatAddress, formatPhone } from '@/lib/utils/format';
 import { avatarColor } from '@/lib/utils/avatar';
+import { showToast } from '@/lib/utils/toast';
 import type { Order } from '@/types';
 
 const dt = designTokens;
@@ -104,9 +105,9 @@ export default function OrderDetailScreen() {
         onPress: async () => {
           try {
             await cancelOrder.mutateAsync(order.id);
-            Alert.alert('הצלחה', 'ההזמנה בוטלה');
+            showToast('ההזמנה בוטלה', 'success');
           } catch {
-            Alert.alert('שגיאה', 'לא הצלחנו לבטל את ההזמנה');
+            showToast('לא הצלחנו לבטל את ההזמנה', 'error');
           }
         },
       },
@@ -115,7 +116,7 @@ export default function OrderDetailScreen() {
 
   const handleRefund = () => {
     if (order.financialStatus !== 'paid' && order.financialStatus !== 'partially_refunded') {
-      Alert.alert('לא ניתן', 'ניתן לבצע החזר רק להזמנות ששולמו');
+      showToast('ניתן לבצע החזר רק להזמנות ששולמו', 'error');
       return;
     }
     Alert.alert('החזר כספי', `האם לבצע החזר כספי מלא של ${formatCurrency(order.total)}?`, [
@@ -126,9 +127,9 @@ export default function OrderDetailScreen() {
         onPress: async () => {
           try {
             await refundOrder.mutateAsync({ orderId: order.id });
-            Alert.alert('הצלחה', 'ההחזר בוצע בהצלחה');
+            showToast('ההחזר בוצע בהצלחה', 'success');
           } catch {
-            Alert.alert('שגיאה', 'לא הצלחנו לבצע את ההחזר');
+            showToast('לא הצלחנו לבצע את ההחזר', 'error');
           }
         },
       },
@@ -149,9 +150,9 @@ export default function OrderDetailScreen() {
                 orderId: order.id,
                 data: trackingNumber ? { trackingNumber } : undefined,
               });
-              Alert.alert('הצלחה', 'ההזמנה סומנה כנשלחה');
+              showToast('ההזמנה סומנה כנשלחה', 'success');
             } catch {
-              Alert.alert('שגיאה', 'לא הצלחנו לסמן את ההזמנה כנשלחה');
+              showToast('לא הצלחנו לסמן את ההזמנה כנשלחה', 'error');
             }
           },
         },
@@ -160,9 +161,9 @@ export default function OrderDetailScreen() {
     ) : (async () => {
       try {
         await fulfillOrder.mutateAsync({ orderId: order.id });
-        Alert.alert('הצלחה', 'ההזמנה סומנה כנשלחה');
+        showToast('ההזמנה סומנה כנשלחה', 'success');
       } catch {
-        Alert.alert('שגיאה', 'לא הצלחנו לסמן את ההזמנה כנשלחה');
+        showToast('לא הצלחנו לסמן את ההזמנה כנשלחה', 'error');
       }
     })();
   };
@@ -175,7 +176,7 @@ export default function OrderDetailScreen() {
         data: { status: newStatus, notifyCustomer: true },
       });
     } catch (err) {
-      Alert.alert('שגיאה', 'לא הצלחנו לעדכן את הסטטוס');
+      showToast('לא הצלחנו לעדכן את הסטטוס', 'error');
     }
   };
 

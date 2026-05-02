@@ -205,11 +205,9 @@ const styles = StyleSheet.create({
 
   // Customer Card
   customerCard: {
-    marginBottom: spacing[3],
+    marginBottom: spacing[2],
     borderRadius: radii.lg,
     backgroundColor: colors.surface.card,
-    borderWidth: 1,
-    borderColor: colors.ink[200],
     padding: spacing[4],
   },
   customerContent: {

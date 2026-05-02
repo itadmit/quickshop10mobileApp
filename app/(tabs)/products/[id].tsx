@@ -42,6 +42,7 @@ import {
   fonts,
 } from '@/components/ui';
 import { formatCurrency, formatProductPrice } from '@/lib/utils/format';
+import { showToast } from '@/lib/utils/toast';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const MONO_FONT = Platform.OS === 'ios' ? 'Menlo' : 'monospace';
@@ -306,7 +307,7 @@ export default function ProductDetailScreen() {
         });
       }
     } catch {
-      Alert.alert('שגיאה', 'לא הצלחנו להעלות את התמונה');
+      showToast('לא הצלחנו להעלות את התמונה', 'error');
     } finally {
       setIsUploading(false);
     }
@@ -339,7 +340,7 @@ export default function ProductDetailScreen() {
 
   const handleSaveEdit = async () => {
     if (!formData.name.trim()) {
-      Alert.alert('שגיאה', 'נא להזין שם מוצר');
+      showToast('נא להזין שם מוצר', 'error');
       return;
     }
 
@@ -382,9 +383,9 @@ export default function ProductDetailScreen() {
         data: productData,
       });
       setIsEditing(false);
-      Alert.alert('הצלחה', 'המוצר עודכן בהצלחה');
+      showToast('המוצר עודכן בהצלחה', 'success');
     } catch {
-      Alert.alert('שגיאה', 'לא הצלחנו לעדכן את המוצר');
+      showToast('לא הצלחנו לעדכן את המוצר', 'error');
     }
   };
 
@@ -402,7 +403,7 @@ export default function ProductDetailScreen() {
               await deleteProduct.mutateAsync(product.id);
               router.back();
             } catch {
-              Alert.alert('שגיאה', 'לא הצלחנו למחוק את המוצר');
+              showToast('לא הצלחנו למחוק את המוצר', 'error');
             }
           },
         },
@@ -421,7 +422,7 @@ export default function ProductDetailScreen() {
         { text: 'סגור' },
       ]);
     } catch {
-      Alert.alert('שגיאה', 'לא הצלחנו לשכפל את המוצר');
+      showToast('לא הצלחנו לשכפל את המוצר', 'error');
     }
   };
 
@@ -438,7 +439,7 @@ export default function ProductDetailScreen() {
             try {
               await toggleStatus.mutateAsync({ productId: product.id, isActive: newStatus });
             } catch {
-              Alert.alert('שגיאה', 'לא הצלחנו לעדכן את הסטטוס');
+              showToast('לא הצלחנו לעדכן את הסטטוס', 'error');
             }
           },
         },
