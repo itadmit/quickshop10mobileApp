@@ -76,7 +76,11 @@ function MenuItem({ icon, title, subtitle, badge, onPress, destructive }: MenuIt
 function MenuSection({ title, children }: { title?: string; children: React.ReactNode }) {
   return (
     <View style={styles.menuSection}>
-      {title && <Text style={styles.sectionTitle}>{title}</Text>}
+      {title && (
+        <View style={styles.sectionTitleWrap}>
+          <Text style={styles.sectionTitle}>{title}</Text>
+        </View>
+      )}
       <View style={styles.menuCard}>{children}</View>
     </View>
   );
@@ -403,15 +407,18 @@ const styles = StyleSheet.create({
   menuSection: {
     marginBottom: dt.spacing[4],
   },
+  sectionTitleWrap: {
+    width: '100%',
+    marginBottom: dt.spacing[2],
+    paddingHorizontal: dt.spacing[1],
+  },
   sectionTitle: {
     fontSize: 13,
     fontFamily: fonts.medium,
     color: dt.colors.ink[500],
     textAlign: 'right',
     writingDirection: 'rtl',
-    alignSelf: 'stretch',
-    marginBottom: dt.spacing[2],
-    paddingHorizontal: dt.spacing[1],
+    width: '100%',
   },
   menuCard: {
     backgroundColor: dt.colors.surface.card,
