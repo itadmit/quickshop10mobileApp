@@ -12,6 +12,7 @@ import {
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Constants from 'expo-constants';
+import * as Updates from 'expo-updates';
 import { useAuth } from '@/hooks';
 import { useAuthStore } from '@/stores';
 import {
@@ -160,6 +161,12 @@ export default function MoreScreen() {
   };
 
   const appVersion = Constants.expoConfig?.version || '1.0.0';
+  const buildNumber =
+    (Constants.expoConfig as { ios?: { buildNumber?: string }; android?: { versionCode?: number } } | null)?.ios?.buildNumber ||
+    (Constants.expoConfig as { ios?: { buildNumber?: string }; android?: { versionCode?: number } } | null)?.android?.versionCode?.toString() ||
+    '';
+  const updateId = Updates.updateId ? Updates.updateId.slice(-8) : 'embedded';
+  const runtimeVersion = Updates.runtimeVersion || appVersion;
 
   return (
     <SafeAreaView style={styles.container} edges={[]}>
@@ -276,7 +283,13 @@ export default function MoreScreen() {
 
         {/* Version */}
         <View style={styles.versionContainer}>
-          <Text style={styles.versionText}>QuickShop v{appVersion}</Text>
+          <Text style={styles.versionText}>
+            QuickShop v{appVersion}
+            {buildNumber ? ` (build ${buildNumber})` : ''}
+          </Text>
+          <Text style={styles.versionSubText}>
+            runtime {runtimeVersion} · OTA {updateId}
+          </Text>
         </View>
       </ScrollView>
 
@@ -446,6 +459,11 @@ const styles = StyleSheet.create({
   versionText: {
     fontSize: 12,
     color: dt.colors.ink[400],
+  },
+  versionSubText: {
+    fontSize: 10,
+    color: dt.colors.ink[300],
+    marginTop: 2,
   },
 
   // Modal
