@@ -45,7 +45,7 @@ import { formatCurrency, formatProductPrice } from '@/lib/utils/format';
 import { showToast } from '@/lib/utils/toast';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const MONO_FONT = Platform.OS === 'ios' ? 'Menlo' : 'monospace';
+const MONO_FONT = designTokens.typography.fontFamily.mono;
 
 function stripHtml(html: string): string {
   if (!html) return '';
@@ -1162,7 +1162,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.5)',
   },
   dotActive: {
-    backgroundColor: '#fff',
+    backgroundColor: designTokens.colors.surface.onBrand,
     width: 18,
     borderRadius: 4,
   },
@@ -1170,13 +1170,13 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: designTokens.spacing[3],
     right: designTokens.spacing[3],
-    backgroundColor: 'rgba(0,0,0,0.55)',
+    backgroundColor: designTokens.colors.overlay.scrim,
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: designTokens.radii.full,
   },
   imageCountText: {
-    color: '#fff',
+    color: designTokens.colors.surface.onBrand,
     fontSize: 12,
     fontFamily: fonts.medium,
   },
@@ -1665,7 +1665,7 @@ const styles = StyleSheet.create({
     width: 22,
     height: 22,
     borderRadius: 11,
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    backgroundColor: designTokens.colors.overlay.heavy,
     alignItems: 'center',
     justifyContent: 'center',
   },

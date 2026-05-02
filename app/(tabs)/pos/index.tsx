@@ -40,7 +40,7 @@ const SCREEN_HEIGHT = Dimensions.get('window').height;
 const GRID_PADDING = designTokens.spacing[4];
 const GRID_GAP = designTokens.spacing[2];
 const MIN_TILE_WIDTH = 105;
-const MONO_FONT = Platform.OS === 'ios' ? 'Menlo' : 'monospace';
+const MONO_FONT = designTokens.typography.fontFamily.mono;
 
 function calcColumns(screenWidth: number) {
   const available = screenWidth - GRID_PADDING * 2;

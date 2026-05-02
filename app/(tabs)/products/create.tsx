@@ -20,6 +20,7 @@ import { useCreateProduct, useCategories, useUploadImage } from '@/hooks';
 import {
   Text,
   Button,
+  Toggle,
   designTokens,
   fonts,
 } from '@/components/ui';
@@ -553,26 +554,24 @@ export default function CreateProductScreen() {
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>וריאציות</Text>
             <View style={styles.card}>
-              <TouchableOpacity
-                style={styles.toggleRow}
-                onPress={() => {
-                  setHasVariants(!hasVariants);
-                  if (hasVariants) {
-                    setOptions([]);
-                    setVariants([]);
-                  }
-                }}
-              >
-                <View style={[styles.toggle, hasVariants && styles.toggleActive]}>
-                  <View style={[styles.toggleThumb, hasVariants && styles.toggleThumbActive]} />
-                </View>
+              <View style={styles.toggleRow}>
+                <Toggle
+                  value={hasVariants}
+                  onValueChange={(next) => {
+                    setHasVariants(next);
+                    if (!next) {
+                      setOptions([]);
+                      setVariants([]);
+                    }
+                  }}
+                />
                 <View style={styles.toggleInfo}>
                   <Text style={styles.toggleTitle}>למוצר יש וריאציות</Text>
                   <Text style={styles.toggleDescription}>
                     גדלים, צבעים או אפשרויות שונות
                   </Text>
                 </View>
-              </TouchableOpacity>
+              </View>
 
               {hasVariants && (
                 <View style={{ marginTop: designTokens.spacing[3] }}>
@@ -711,25 +710,16 @@ export default function CreateProductScreen() {
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>מלאי</Text>
               <View style={styles.card}>
-                <TouchableOpacity
-                  style={styles.toggleRow}
-                  onPress={() => updateField('trackInventory', !formData.trackInventory)}
-                >
-                  <View
-                    style={[styles.toggle, formData.trackInventory && styles.toggleActive]}
-                  >
-                    <View
-                      style={[
-                        styles.toggleThumb,
-                        formData.trackInventory && styles.toggleThumbActive,
-                      ]}
-                    />
-                  </View>
+                <View style={styles.toggleRow}>
+                  <Toggle
+                    value={!!formData.trackInventory}
+                    onValueChange={(v) => updateField('trackInventory', v)}
+                  />
                   <View style={styles.toggleInfo}>
                     <Text style={styles.toggleTitle}>מעקב מלאי</Text>
                     <Text style={styles.toggleDescription}>עקוב אחר כמות המלאי</Text>
                   </View>
-                </TouchableOpacity>
+                </View>
 
                 {formData.trackInventory && (
                   <View style={styles.inputGroup}>
@@ -793,22 +783,18 @@ export default function CreateProductScreen() {
           {/* Status */}
           <View style={styles.section}>
             <View style={styles.card}>
-              <TouchableOpacity
-                style={styles.toggleRow}
-                onPress={() => updateField('isActive', !formData.isActive)}
-              >
-                <View style={[styles.toggle, formData.isActive && styles.toggleActive]}>
-                  <View
-                    style={[styles.toggleThumb, formData.isActive && styles.toggleThumbActive]}
-                  />
-                </View>
+              <View style={styles.toggleRow}>
+                <Toggle
+                  value={!!formData.isActive}
+                  onValueChange={(v) => updateField('isActive', v)}
+                />
                 <View style={styles.toggleInfo}>
                   <Text style={styles.toggleTitle}>מוצר פעיל</Text>
                   <Text style={styles.toggleDescription}>
                     {formData.isActive ? 'המוצר יוצג בחנות' : 'המוצר יישמר כטיוטה'}
                   </Text>
                 </View>
-              </TouchableOpacity>
+              </View>
             </View>
           </View>
 
@@ -887,7 +873,7 @@ const styles = StyleSheet.create({
     width: 22,
     height: 22,
     borderRadius: 11,
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    backgroundColor: designTokens.colors.overlay.heavy,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -902,7 +888,7 @@ const styles = StyleSheet.create({
   },
   primaryBadgeText: {
     fontSize: 10,
-    color: '#fff',
+    color: designTokens.colors.surface.onBrand,
     fontFamily: fonts.medium,
   },
   addImageBtn: {

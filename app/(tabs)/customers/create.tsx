@@ -16,6 +16,7 @@ import { useCreateCustomer } from '@/hooks';
 import {
   Text,
   Button,
+  Toggle,
   designTokens,
   fonts,
 } from '@/components/ui';
@@ -277,26 +278,18 @@ export default function CreateCustomerScreen() {
           {/* Marketing */}
           <View style={styles.section}>
             <View style={styles.card}>
-              <TouchableOpacity
-                style={styles.toggleRow}
-                onPress={() => updateField('acceptsMarketing', !formData.acceptsMarketing)}
-              >
-                <View style={[
-                  styles.toggle,
-                  formData.acceptsMarketing && styles.toggleActive
-                ]}>
-                  <View style={[
-                    styles.toggleThumb,
-                    formData.acceptsMarketing && styles.toggleThumbActive
-                  ]} />
-                </View>
+              <View style={styles.toggleRow}>
+                <Toggle
+                  value={formData.acceptsMarketing}
+                  onValueChange={(v) => updateField('acceptsMarketing', v)}
+                />
                 <View style={styles.toggleInfo}>
                   <Text style={styles.toggleTitle}>קבלת עדכונים שיווקיים</Text>
                   <Text style={styles.toggleDescription}>
                     הלקוח מסכים לקבל עדכונים ומבצעים
                   </Text>
                 </View>
-              </TouchableOpacity>
+              </View>
             </View>
           </View>
 

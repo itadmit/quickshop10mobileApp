@@ -175,7 +175,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
   },
   badgeText: {
-    color: '#FFFFFF',
+    color: dt.colors.surface.onBrand,
     fontSize: 10,
     fontFamily: fonts.bold,
   },

@@ -32,7 +32,7 @@ const FILTER_TABS = [
 ];
 
 const { colors, spacing, radii } = designTokens;
-const monoFont = Platform.OS === 'ios' ? 'Menlo' : 'monospace';
+const monoFont = designTokens.typography.fontFamily.mono;
 
 function getStockInfo(product: Product) {
   // Products without inventory tracking shouldn't show stock status
@@ -364,7 +364,7 @@ const styles = StyleSheet.create({
   },
   draftText: {
     fontSize: 12,
-    color: '#FFFFFF',
+    color: designTokens.colors.surface.onBrand,
     fontFamily: fonts.medium,
     writingDirection: 'rtl',
     textAlign: 'right',

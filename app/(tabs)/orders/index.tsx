@@ -33,7 +33,7 @@ const STATUS_TABS: { key: OrdersTabKey; label: string }[] = [
 ];
 
 const { colors, spacing, radii } = designTokens;
-const monoFont = Platform.OS === 'ios' ? 'Menlo' : 'monospace';
+const monoFont = designTokens.typography.fontFamily.mono;
 
 function tabFromRouteParam(raw: string | string[] | undefined): OrdersTabKey {
   const s = Array.isArray(raw) ? raw[0] : raw;

@@ -225,7 +225,7 @@ const styles = StyleSheet.create({
   avatarText: {
     fontSize: 18,
     fontFamily: fonts.bold,
-    color: '#FFFFFF',
+    color: designTokens.colors.surface.onBrand,
   },
   customerInfo: {
     flex: 1,

@@ -366,7 +366,7 @@ const styles = StyleSheet.create({
     backgroundColor: dt.colors.brand[500],
   },
   retryText: {
-    color: '#fff',
+    color: dt.colors.surface.onBrand,
     fontFamily: fonts.semiBold,
   },
 });

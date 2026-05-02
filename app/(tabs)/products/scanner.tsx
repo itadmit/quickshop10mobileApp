@@ -16,11 +16,12 @@ import {
   Button,
   Card,
   LoadingScreen,
-  colors,
   spacing,
-  borderRadius,
   fonts,
+  designTokens,
 } from '@/components/ui';
+
+const dt = designTokens;
 import { formatCurrency } from '@/lib/utils/format';
 
 export default function BarcodeScannerScreen() {
@@ -72,7 +73,7 @@ export default function BarcodeScannerScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.permissionDenied}>
-          <Ionicons name="camera-outline" size={48} color={colors.textMuted} />
+          <Ionicons name="camera-outline" size={48} color={dt.colors.ink[400]} />
           <Text size="xl" weight="semiBold" center style={{ marginTop: spacing[4] }}>
             נדרשת גישה למצלמה
           </Text>
@@ -115,7 +116,7 @@ export default function BarcodeScannerScreen() {
           style={styles.torchButton}
           onPress={() => setTorchOn(!torchOn)}
         >
-          <Ionicons name={torchOn ? 'flashlight' : 'flashlight-outline'} size={24} color={colors.textPrimary} />
+          <Ionicons name={torchOn ? 'flashlight' : 'flashlight-outline'} size={24} color={dt.colors.ink[950]} />
         </TouchableOpacity>
       </View>
 
@@ -126,7 +127,7 @@ export default function BarcodeScannerScreen() {
           <TextInput
             style={styles.input}
             placeholder="או הזן ברקוד ידנית..."
-            placeholderTextColor={colors.textMuted}
+            placeholderTextColor={dt.colors.ink[400]}
             value={manualInput}
             onChangeText={setManualInput}
             keyboardType="number-pad"
@@ -160,7 +161,7 @@ export default function BarcodeScannerScreen() {
                       </Text>
                     )}
                     <View style={styles.productMeta}>
-                      <Text weight="bold" style={{ color: '#00785C' }}>
+                      <Text weight="bold" style={{ color: dt.colors.brand[500] }}>
                         {formatCurrency(barcodeResult.variant?.price || barcodeResult.product?.price || 0)}
                       </Text>
                       <Text color="secondary" size="sm">
@@ -174,7 +175,7 @@ export default function BarcodeScannerScreen() {
             ) : (
               <Card>
                 <View style={styles.notFound}>
-                  <Ionicons name="search-outline" size={32} color={colors.textMuted} />
+                  <Ionicons name="search-outline" size={32} color={dt.colors.ink[400]} />
                   <Text weight="semiBold" style={{ marginTop: spacing[2] }}>
                     לא נמצא מוצר
                   </Text>
@@ -203,7 +204,7 @@ export default function BarcodeScannerScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.black,
+    backgroundColor: '#000000',
   },
   cameraContainer: {
     flex: 1,
@@ -216,14 +217,14 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(0,0,0,0.3)',
+    backgroundColor: dt.colors.overlay.light,
   },
   scanFrame: {
     width: 280,
     height: 150,
     borderWidth: 2,
-    borderColor: '#00785C',
-    borderRadius: borderRadius.lg,
+    borderColor: dt.colors.brand[500],
+    borderRadius: dt.radii.lg,
     backgroundColor: 'transparent',
   },
   torchButton: {
@@ -233,31 +234,31 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: colors.white,
+    backgroundColor: dt.colors.surface.card,
     alignItems: 'center',
     justifyContent: 'center',
   },
   bottomSheet: {
-    backgroundColor: colors.white,
-    borderTopLeftRadius: borderRadius.xl,
-    borderTopRightRadius: borderRadius.xl,
+    backgroundColor: dt.colors.surface.card,
+    borderTopLeftRadius: dt.radii.xl,
+    borderTopRightRadius: dt.radii.xl,
     padding: spacing[4],
     paddingBottom: spacing[6],
   },
   manualInput: {
-    flexDirection: 'row-reverse',
+    flexDirection: 'row',
     gap: spacing[2],
   },
   input: {
     flex: 1,
-    backgroundColor: '#F6F6F7',
-    borderRadius: borderRadius.md,
+    backgroundColor: dt.colors.ink[100],
+    borderRadius: dt.radii.md,
     padding: spacing[3],
     fontFamily: fonts.regular,
     fontSize: 16,
     textAlign: 'right',
     borderWidth: 1,
-    borderColor: '#E1E3E5',
+    borderColor: dt.colors.ink[200],
   },
   loadingContainer: {
     padding: spacing[4],
@@ -267,7 +268,7 @@ const styles = StyleSheet.create({
     marginTop: spacing[4],
   },
   productResult: {
-    flexDirection: 'row-reverse',
+    flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
@@ -275,7 +276,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   productMeta: {
-    flexDirection: 'row-reverse',
+    flexDirection: 'row',
     gap: spacing[3],
     marginTop: spacing[2],
   },
@@ -288,7 +289,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: spacing[6],
-    backgroundColor: '#F6F6F7',
+    backgroundColor: dt.colors.ink[100],
   },
 });
 

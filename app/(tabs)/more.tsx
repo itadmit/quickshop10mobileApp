@@ -383,7 +383,7 @@ const styles = StyleSheet.create({
   storeLogoText: {
     fontSize: 20,
     fontFamily: fonts.bold,
-    color: '#FFFFFF',
+    color: dt.colors.surface.onBrand,
   },
   storeInfo: {
     flex: 1,
@@ -478,7 +478,7 @@ const styles = StyleSheet.create({
   // Modal
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: dt.colors.overlay.heavy,
     justifyContent: 'center',
     alignItems: 'center',
     padding: dt.spacing[4],

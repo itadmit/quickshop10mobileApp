@@ -941,7 +941,7 @@ const styles = StyleSheet.create({
   editHeaderSaveBtnText: {
     fontSize: 15,
     fontFamily: fonts.medium,
-    color: '#FFFFFF',
+    color: dt.colors.surface.onBrand,
   },
   editScrollContent: {
     paddingTop: spacing[4],

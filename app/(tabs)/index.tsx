@@ -496,7 +496,7 @@ function QuickAction({
             { backgroundColor: primary ? 'rgba(255,255,255,0.2)' : `${color}18` },
           ]}
         >
-          <Ionicons name={icon} size={22} color={primary ? '#FFFFFF' : color} />
+          <Ionicons name={icon} size={22} color={primary ? dt.colors.surface.onBrand : color} />
         </View>
       </View>
     </TouchableOpacity>
@@ -772,7 +772,7 @@ const styles = StyleSheet.create({
     writingDirection: 'rtl',
   },
   periodPillTextActive: {
-    color: '#FFFFFF',
+    color: dt.colors.surface.onBrand,
   },
   periodPillTextInactive: {
     color: dt.colors.ink[600],
@@ -867,7 +867,7 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
   quickActionLabelPrimary: {
-    color: '#FFFFFF',
+    color: dt.colors.surface.onBrand,
   },
 
   // Orders

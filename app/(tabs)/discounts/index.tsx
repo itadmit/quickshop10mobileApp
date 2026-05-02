@@ -394,7 +394,7 @@ const styles = StyleSheet.create({
     width: 22,
     height: 22,
     borderRadius: 11,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: dt.colors.surface.onBrand,
     alignSelf: 'flex-end',
   },
   toggleThumbActive: {

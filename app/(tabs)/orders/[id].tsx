@@ -672,7 +672,7 @@ const styles = StyleSheet.create({
   customerAvatarText: {
     fontSize: 18,
     fontFamily: fonts.bold,
-    color: '#FFFFFF',
+    color: dt.colors.surface.onBrand,
   },
   customerInfo: {
     flex: 1,
