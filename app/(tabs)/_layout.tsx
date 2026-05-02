@@ -46,6 +46,7 @@ export default function TabsLayout() {
       screenOptions={{
         headerShown: true,
         headerTitleAlign: 'center',
+        headerShadowVisible: false,
         headerTitleStyle: {
           fontFamily: fonts.bold,
           fontSize: 17,
