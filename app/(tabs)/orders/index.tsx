@@ -26,10 +26,10 @@ import type { Order, OrderStatus, OrdersListResponse, OrdersStats } from '@/type
 type OrdersTabKey = 'all' | 'pendingPayment' | 'awaitingShipment' | 'paid';
 
 const STATUS_TABS: { key: OrdersTabKey; label: string }[] = [
-  { key: 'all', label: 'הכל' },
+  { key: 'paid', label: 'שולמו' },
   { key: 'pendingPayment', label: 'ממתינות לתשלום' },
   { key: 'awaitingShipment', label: 'ממתינות למשלוח' },
-  { key: 'paid', label: 'שולמו' },
+  { key: 'all', label: 'הכל' },
 ];
 
 const { colors, spacing, radii } = designTokens;
@@ -37,14 +37,14 @@ const monoFont = Platform.OS === 'ios' ? 'Menlo' : 'monospace';
 
 function tabFromRouteParam(raw: string | string[] | undefined): OrdersTabKey {
   const s = Array.isArray(raw) ? raw[0] : raw;
-  if (!s) return 'all';
+  if (!s) return 'paid';
   if (s === 'all' || s === 'paid' || s === 'pendingPayment' || s === 'awaitingShipment') {
     return s;
   }
   // Legacy deep-links from older builds / dashboard alerts
   if (s === 'pending') return 'pendingPayment';
   if (s === 'confirmed' || s === 'processing') return 'awaitingShipment';
-  return 'all';
+  return 'paid';
 }
 
 function tabCountFor(stats: OrdersStats | undefined, key: OrdersTabKey): number | undefined {
