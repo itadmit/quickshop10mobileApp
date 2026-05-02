@@ -2,7 +2,7 @@ import 'react-native-gesture-handler';
 import React, { useEffect, useState, useLayoutEffect, useRef } from 'react';
 import { Slot, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { I18nManager, View, ActivityIndicator, StyleSheet, Animated, Image as RNImage, Text as RNText, Pressable } from 'react-native';
+import { I18nManager, View, ActivityIndicator, StyleSheet, Animated, Image as RNImage, Text as RNText } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
 import { useFonts } from 'expo-font';
 import {
@@ -55,36 +55,6 @@ const queryClient = new QueryClient({
   },
 });
 
-type OtaPhase = 'idle' | 'checking' | 'available' | 'downloading' | 'installing';
-
-function UpdatePromptModal({
-  onUpdate,
-  onLater,
-}: {
-  onUpdate: () => void;
-  onLater: () => void;
-}) {
-  return (
-    <View style={otaStyles.modalBackdrop}>
-      <View style={otaStyles.modalCard}>
-        <View style={otaStyles.modalIconWrap}>
-          <RNText style={otaStyles.modalIcon}>⬇️</RNText>
-        </View>
-        <RNText style={otaStyles.modalTitle}>עדכון חדש זמין</RNText>
-        <RNText style={otaStyles.modalBody}>
-          יצא עדכון חדש לאפליקציה עם שיפורים ותיקונים. רוצה להתקין עכשיו?
-        </RNText>
-        <Pressable style={otaStyles.modalPrimaryBtn} onPress={onUpdate}>
-          <RNText style={otaStyles.modalPrimaryBtnText}>עדכן כעת</RNText>
-        </Pressable>
-        <Pressable style={otaStyles.modalSecondaryBtn} onPress={onLater}>
-          <RNText style={otaStyles.modalSecondaryBtnText}>לא עכשיו</RNText>
-        </Pressable>
-      </View>
-    </View>
-  );
-}
-
 function AnimatedProgressBar() {
   const anim = useRef(new Animated.Value(0)).current;
   useEffect(() => {
@@ -107,28 +77,17 @@ function AnimatedProgressBar() {
   );
 }
 
-function PulsingDots() {
-  const dot = useRef(new Animated.Value(0)).current;
-  useEffect(() => {
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(dot, { toValue: 1, duration: 600, useNativeDriver: true }),
-        Animated.timing(dot, { toValue: 0, duration: 600, useNativeDriver: true }),
-      ]),
-    ).start();
-  }, [dot]);
-  return (
-    <Animated.View style={{ opacity: dot.interpolate({ inputRange: [0, 1], outputRange: [0.3, 1] }) }}>
-      <ActivityIndicator size="large" color="#008060" />
-    </Animated.View>
-  );
-}
-
 export default function RootLayout() {
   const [appReady, setAppReady] = useState(false);
   const [splashDone, setSplashDone] = useState(false);
-  const [otaPhase, setOtaPhase] = useState<OtaPhase>(__DEV__ ? 'idle' : 'checking');
   const splashOpacity = useRef(new Animated.Value(1)).current;
+  const updates = Updates.useUpdates();
+  const otaActive = updates.isDownloading || updates.isUpdatePending;
+  const otaLabel = updates.isUpdatePending
+    ? 'מתקין עדכון...'
+    : updates.isDownloading
+      ? 'מוריד עדכון...'
+      : '';
   const initialize = useAuthStore((s) => s.initialize);
   const isLoading = useAuthStore((s) => s.isLoading);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
@@ -154,51 +113,15 @@ export default function RootLayout() {
     Pacifico_400Regular,
   });
 
-  // OTA (EAS Update): check silently, then prompt the user with a modal
-  // before downloading/installing. Avoids the flickering auto-apply on launch.
+  // While the splash is still up, if a downloaded update is staged, apply
+  // it now so the user sees one clean splash → update install → app, with
+  // no mid-session reload. After splash is gone we leave the staged update
+  // alone (it will apply on the next cold start).
   useEffect(() => {
-    if (__DEV__) return;
-    let cancelled = false;
-
-    const safety = setTimeout(() => {
-      if (!cancelled) setOtaPhase('idle');
-    }, 8000);
-
-    (async () => {
-      try {
-        if (!Updates.isEnabled) {
-          if (!cancelled) setOtaPhase('idle');
-          return;
-        }
-        const { isAvailable } = await Updates.checkForUpdateAsync();
-        if (cancelled) return;
-        setOtaPhase(isAvailable ? 'available' : 'idle');
-      } catch {
-        if (!cancelled) setOtaPhase('idle');
-      } finally {
-        clearTimeout(safety);
-      }
-    })();
-    return () => {
-      cancelled = true;
-      clearTimeout(safety);
-    };
-  }, []);
-
-  const handleApplyUpdate = async () => {
-    try {
-      setOtaPhase('downloading');
-      await Updates.fetchUpdateAsync();
-      setOtaPhase('installing');
-      await Updates.reloadAsync();
-    } catch {
-      setOtaPhase('idle');
-    }
-  };
-
-  const handleDismissUpdate = () => {
-    setOtaPhase('idle');
-  };
+    if (__DEV__ || splashDone) return;
+    if (!updates.isUpdatePending) return;
+    Updates.reloadAsync().catch(() => {});
+  }, [updates.isUpdatePending, splashDone]);
 
   // Initialize auth
   useEffect(() => {
@@ -252,9 +175,10 @@ export default function RootLayout() {
     return () => clearTimeout(timer);
   }, []);
 
-  // Fade out the CUSTOM splash only when everything is ready AND OTA is idle.
+  // Fade out the CUSTOM splash only when everything is ready AND no OTA is
+  // mid-flight. If an update is downloading, the splash holds with a label.
   useEffect(() => {
-    if (fontsLoaded && appReady && !isLoading && otaPhase === 'idle') {
+    if (fontsLoaded && appReady && !isLoading && !otaActive) {
       const timeout = setTimeout(() => {
         Animated.timing(splashOpacity, {
           toValue: 0,
@@ -264,7 +188,7 @@ export default function RootLayout() {
       }, 300);
       return () => clearTimeout(timeout);
     }
-  }, [fontsLoaded, appReady, isLoading, otaPhase, splashOpacity]);
+  }, [fontsLoaded, appReady, isLoading, otaActive, splashOpacity]);
 
   // While fonts/auth are loading, show only the custom splash (no app content).
   if (!fontsLoaded || !appReady) {
@@ -276,18 +200,12 @@ export default function RootLayout() {
           style={otaStyles.logo}
           resizeMode="contain"
         />
-        {(otaPhase === 'downloading' || otaPhase === 'installing') && (
+        {otaActive && (
           <View style={otaStyles.updateBox}>
             <ActivityIndicator size="small" color="#008060" />
-            <RNText style={otaStyles.updateTitle}>
-              {otaPhase === 'downloading' && 'מוריד עדכונים...'}
-              {otaPhase === 'installing' && 'מתקין, רגע...'}
-            </RNText>
-            {otaPhase === 'downloading' && <AnimatedProgressBar />}
+            <RNText style={otaStyles.updateTitle}>{otaLabel}</RNText>
+            {updates.isDownloading && <AnimatedProgressBar />}
           </View>
-        )}
-        {otaPhase === 'available' && (
-          <UpdatePromptModal onUpdate={handleApplyUpdate} onLater={handleDismissUpdate} />
         )}
       </View>
     );
@@ -313,32 +231,14 @@ export default function RootLayout() {
               style={otaStyles.logo}
               resizeMode="contain"
             />
-            {(otaPhase === 'downloading' || otaPhase === 'installing') && (
+            {otaActive && (
               <View style={otaStyles.updateBox}>
                 <ActivityIndicator size="small" color="#008060" />
-                <RNText style={otaStyles.updateTitle}>
-                  {otaPhase === 'downloading' && 'מוריד עדכונים...'}
-                  {otaPhase === 'installing' && 'מתקין, רגע...'}
-                </RNText>
-                {otaPhase === 'downloading' && <AnimatedProgressBar />}
+                <RNText style={otaStyles.updateTitle}>{otaLabel}</RNText>
+                {updates.isDownloading && <AnimatedProgressBar />}
               </View>
             )}
           </Animated.View>
-        )}
-        {otaPhase === 'available' && (
-          <UpdatePromptModal onUpdate={handleApplyUpdate} onLater={handleDismissUpdate} />
-        )}
-        {(otaPhase === 'downloading' || otaPhase === 'installing') && splashDone && (
-          <View style={otaStyles.applyOverlay}>
-            <View style={otaStyles.updateBox}>
-              <ActivityIndicator size="small" color="#008060" />
-              <RNText style={otaStyles.updateTitle}>
-                {otaPhase === 'downloading' && 'מוריד עדכונים...'}
-                {otaPhase === 'installing' && 'מתקין, רגע...'}
-              </RNText>
-              {otaPhase === 'downloading' && <AnimatedProgressBar />}
-            </View>
-          </View>
         )}
       </GestureHandlerRootView>
     </QueryClientProvider>
@@ -387,86 +287,5 @@ const otaStyles = StyleSheet.create({
     height: '100%',
     borderRadius: 3,
     backgroundColor: '#008060',
-  },
-  applyOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  modalBackdrop: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(15, 23, 42, 0.45)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 32,
-  },
-  modalCard: {
-    width: '100%',
-    maxWidth: 360,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    paddingVertical: 28,
-    paddingHorizontal: 24,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.18,
-    shadowRadius: 24,
-    elevation: 12,
-  },
-  modalIconWrap: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: '#ECFDF5',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 16,
-  },
-  modalIcon: {
-    fontSize: 30,
-  },
-  modalTitle: {
-    fontFamily: 'Assistant_700Bold',
-    fontSize: 20,
-    color: '#0F172A',
-    textAlign: 'center',
-    marginBottom: 8,
-    writingDirection: 'rtl',
-  },
-  modalBody: {
-    fontFamily: 'Assistant_400Regular',
-    fontSize: 15,
-    color: '#475569',
-    textAlign: 'center',
-    lineHeight: 22,
-    marginBottom: 22,
-    writingDirection: 'rtl',
-  },
-  modalPrimaryBtn: {
-    width: '100%',
-    backgroundColor: '#008060',
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  modalPrimaryBtnText: {
-    fontFamily: 'Assistant_600SemiBold',
-    fontSize: 16,
-    color: '#FFFFFF',
-    writingDirection: 'rtl',
-  },
-  modalSecondaryBtn: {
-    width: '100%',
-    paddingVertical: 12,
-    alignItems: 'center',
-  },
-  modalSecondaryBtnText: {
-    fontFamily: 'Assistant_500Medium',
-    fontSize: 15,
-    color: '#64748B',
-    writingDirection: 'rtl',
   },
 });
