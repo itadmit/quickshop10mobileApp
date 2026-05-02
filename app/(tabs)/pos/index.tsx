@@ -1086,7 +1086,7 @@ export default function POSScreen() {
             {/* Mark as paid toggle */}
             {!isPartialPayment && (
               <View style={styles.optionRow}>
-                <Text style={styles.optionLabel}>סמן כשולם</Text>
+                <Text style={styles.optionLabel}>סמן כשולם (מזומן/אחר)</Text>
                 <TouchableOpacity
                   style={[
                     styles.checkbox,
@@ -1215,7 +1215,7 @@ export default function POSScreen() {
               <>
                 <Ionicons name="card-outline" size={20} color="#FFFFFF" />
                 <Text style={styles.checkoutBtnText}>
-                  {cart.markAsPaid ? 'סגור הזמנה' : 'חייב'} •{' '}
+                  {cart.markAsPaid ? 'סגור הזמנה' : 'המשך לתשלום'} •{' '}
                   {formatCurrency(cart.total)}
                 </Text>
               </>
