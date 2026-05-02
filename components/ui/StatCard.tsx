@@ -5,7 +5,6 @@ import { Sparkline } from './Sparkline';
 import { designTokens, fonts } from './theme';
 
 const dt = designTokens;
-const CARD_SIZE = 140;
 
 interface StatCardTrend {
   value: number;
@@ -21,6 +20,8 @@ interface StatCardProps {
   isCurrency?: boolean;
   onPress?: () => void;
   accentColor?: string;
+  /** Optional fixed width — used for horizontal scroll lists where flex:1 doesn't size. Defaults to flex:1. */
+  width?: number;
 }
 
 export function StatCard({
@@ -32,6 +33,7 @@ export function StatCard({
   isCurrency = false,
   onPress,
   accentColor = dt.colors.brand[500],
+  width,
 }: StatCardProps) {
   const trendColor = trend
     ? trend.isPositive
@@ -80,21 +82,22 @@ export function StatCard({
     </View>
   );
 
+  const wrapStyle = width != null ? { width, height: 116 } : styles.touchable;
+
   if (onPress) {
     return (
-      <TouchableOpacity onPress={onPress} activeOpacity={0.7} style={styles.touchable}>
+      <TouchableOpacity onPress={onPress} activeOpacity={0.7} style={wrapStyle}>
         {content}
       </TouchableOpacity>
     );
   }
 
-  return <View style={styles.touchable}>{content}</View>;
+  return <View style={wrapStyle}>{content}</View>;
 }
 
 const styles = StyleSheet.create({
   touchable: {
-    width: CARD_SIZE,
-    height: CARD_SIZE,
+    flex: 1,
   },
   card: {
     flex: 1,
@@ -102,6 +105,7 @@ const styles = StyleSheet.create({
     borderRadius: dt.radii.lg,
     padding: dt.spacing[3],
     justifyContent: 'space-between',
+    gap: 6,
   },
   headerRow: {
     flexDirection: 'row',

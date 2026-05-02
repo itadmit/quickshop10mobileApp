@@ -262,7 +262,7 @@ export default function DashboardScreen() {
             accentColor={dt.colors.brand[500]}
             series={ordersSeries.length > 1 ? ordersSeries : undefined}
             trend={ordersTrend}
-            onPress={() => router.push('/(tabs)/orders')}
+            width={140} onPress={() => router.push("/(tabs)/orders")}
           />
           <StatCard
             label="ממוצע להזמנה"
@@ -270,12 +270,14 @@ export default function DashboardScreen() {
             icon={<Ionicons name="analytics-outline" size={18} color={dt.colors.accent[500]} />}
             accentColor={dt.colors.accent[500]}
             series={revenueSeries.length > 1 ? revenueSeries : undefined}
+            width={140}
           />
           <StatCard
             label="מוצרים פעילים"
             value={String(productsCount)}
             icon={<Ionicons name="cube-outline" size={18} color={dt.colors.semantic.success.DEFAULT} />}
             accentColor={dt.colors.semantic.success.DEFAULT}
+            width={140}
             onPress={() => router.push('/(tabs)/products')}
           />
           <StatCard
@@ -283,6 +285,7 @@ export default function DashboardScreen() {
             value={String(customersCount)}
             icon={<Ionicons name="people-outline" size={18} color={dt.colors.semantic.info.DEFAULT} />}
             accentColor={dt.colors.semantic.info.DEFAULT}
+            width={140}
             onPress={() => router.push('/(tabs)/customers')}
           />
           {pendingCount > 0 && (
@@ -291,6 +294,7 @@ export default function DashboardScreen() {
               value={String(pendingCount)}
               icon={<Ionicons name="time-outline" size={18} color={dt.colors.semantic.warning.DEFAULT} />}
               accentColor={dt.colors.semantic.warning.DEFAULT}
+              width={140}
               onPress={() => router.push('/(tabs)/orders?status=pendingPayment')}
             />
           )}
@@ -300,6 +304,7 @@ export default function DashboardScreen() {
               value={String(lowStockCount)}
               icon={<Ionicons name="alert-circle-outline" size={18} color={dt.colors.semantic.danger.DEFAULT} />}
               accentColor={dt.colors.semantic.danger.DEFAULT}
+              width={140}
               onPress={() => router.push('/(tabs)/products')}
             />
           )}
@@ -327,7 +332,7 @@ export default function DashboardScreen() {
             <QuickAction
               icon="receipt-outline"
               label="הזמנה חדשה"
-              onPress={() => router.push('/(tabs)/orders')}
+              onPress={() => router.push("/(tabs)/orders")}
               color={dt.colors.brand[400]}
             />
             <QuickAction

@@ -180,7 +180,7 @@ const styles = StyleSheet.create({
   periodText: { fontSize: 13, fontFamily: fonts.medium, color: dt.colors.ink[600] },
   periodTextActive: { color: dt.colors.surface.onBrand },
   kpiGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: dt.spacing[3] },
-  kpiTile: { width: '48%', height: 100 },
+  kpiTile: { width: '48%', height: 116 },
   section: { gap: dt.spacing[2] },
   segmentsCard: { gap: dt.spacing[3] },
   segmentRow: { gap: 6 },

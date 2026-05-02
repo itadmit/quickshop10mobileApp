@@ -154,7 +154,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: dt.colors.surface.background },
   scroll: { padding: dt.spacing[4], gap: dt.spacing[4] },
   kpiGrid: { flexDirection: 'row', gap: dt.spacing[3] },
-  kpiTile: { flex: 1, height: 100 },
+  kpiTile: { flex: 1, height: 116 },
   filterRow: { flexDirection: 'row', gap: dt.spacing[2] },
   filterPill: { flex: 1, paddingVertical: dt.spacing[2], borderRadius: dt.radii.full, backgroundColor: dt.colors.ink[50], alignItems: 'center' },
   filterPillActive: { backgroundColor: dt.colors.brand[500] },

@@ -146,7 +146,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: dt.colors.surface.background },
   scroll: { padding: dt.spacing[4], gap: dt.spacing[4] },
   kpiGrid: { flexDirection: 'row', gap: dt.spacing[3] },
-  kpiTile: { flex: 1, height: 100 },
+  kpiTile: { flex: 1, height: 116 },
   section: { gap: dt.spacing[2] },
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: dt.spacing[3] },
   rowBorder: { borderBottomWidth: 1, borderBottomColor: dt.colors.ink[100] },
