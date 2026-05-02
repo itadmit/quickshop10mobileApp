@@ -23,6 +23,7 @@ import {
   designTokens,
   fonts,
 } from '@/components/ui';
+import { showToast } from '@/lib/utils/toast';
 
 interface VariantOption {
   name: string;
@@ -134,7 +135,7 @@ export default function CreateProductScreen() {
         ]);
       }
     } catch {
-      Alert.alert('שגיאה', 'לא הצלחנו להעלות את התמונה');
+      showToast('לא הצלחנו להעלות את התמונה', 'error');
     } finally {
       setIsUploading(false);
     }
@@ -148,11 +149,11 @@ export default function CreateProductScreen() {
   const addOption = () => {
     const name = newOptionName.trim();
     if (!name) {
-      Alert.alert('שגיאה', 'נא להזין שם אופציה (לדוגמה: גודל, צבע)');
+      showToast('נא להזין שם אופציה (לדוגמה: גודל, צבע)', 'error');
       return;
     }
     if (options.length >= 2) {
-      Alert.alert('שגיאה', 'ניתן להוסיף עד 2 אופציות');
+      showToast('ניתן להוסיף עד 2 אופציות', 'error');
       return;
     }
     setOptions(prev => [...prev, { name, values: [] }]);
@@ -237,15 +238,15 @@ export default function CreateProductScreen() {
 
   const validateForm = (): boolean => {
     if (!formData.name.trim()) {
-      Alert.alert('שגיאה', 'נא להזין שם מוצר');
+      showToast('נא להזין שם מוצר', 'error');
       return false;
     }
     if (!hasVariants && (!formData.price || parseFloat(formData.price) <= 0)) {
-      Alert.alert('שגיאה', 'נא להזין מחיר תקין');
+      showToast('נא להזין מחיר תקין', 'error');
       return false;
     }
     if (hasVariants && variants.length === 0) {
-      Alert.alert('שגיאה', 'נא להוסיף אופציות וליצור וריאציות');
+      showToast('נא להוסיף אופציות וליצור וריאציות', 'error');
       return false;
     }
     return true;

@@ -138,7 +138,9 @@ export default function POSScreen() {
   const tileWidth = Math.floor((gridWidth - GRID_GAP * (gridColumns - 1)) / gridColumns);
 
   useEffect(() => {
-    console.log('[POS Grid] gridWidth:', gridWidth, 'columns:', gridColumns, 'tileWidth:', tileWidth, 'screenWidth:', Dimensions.get('window').width);
+    if (__DEV__) {
+      console.log('[POS Grid] gridWidth:', gridWidth, 'columns:', gridColumns, 'tileWidth:', tileWidth, 'screenWidth:', Dimensions.get('window').width);
+    }
   }, [gridWidth, gridColumns, tileWidth]);
 
   const router = useRouter();
@@ -190,6 +192,7 @@ export default function POSScreen() {
   } = usePOSProducts(debouncedSearch || undefined, selectedCategory);
 
   useEffect(() => {
+    if (!__DEV__) return;
     if (productsError) {
       console.log('[POS Screen] Error object:', JSON.stringify(productsError, null, 2));
       console.log('[POS Screen] Error message:', (productsError as Error)?.message);
@@ -268,7 +271,7 @@ export default function POSScreen() {
   const handleAddManualItem = useCallback(() => {
     const price = parseFloat(manualPrice);
     if (!manualName.trim() || isNaN(price) || price <= 0) {
-      Alert.alert('שגיאה', 'יש למלא שם ומחיר');
+      showToast('יש למלא שם ומחיר', 'error');
       return;
     }
     cart.addManualItem(manualName.trim(), price);
@@ -364,6 +367,27 @@ export default function POSScreen() {
         return;
       }
 
+      // No paymentUrl. Two distinct cases:
+      // (a) order was marked as paid up-front (markAsPaid / partial cash)
+      //     → success
+      // (b) order was meant to redirect but the provider didn't return a
+      //     paymentUrl (Quick Payments hosted-fields, no provider configured,
+      //     provider error). Backend creates the order in pending status and
+      //     returns result.error. We must not silently treat this as success
+      //     or the cashier walks away thinking the customer paid.
+      const wasMarkedAsPaid = (overrides?.markAsPaid ?? cart.markAsPaid) || (overrides?.partialPaymentAmount ?? 0) > 0;
+
+      if (!wasMarkedAsPaid) {
+        hapticWarning();
+        Alert.alert(
+          'לא ניתן לפתוח עמוד תשלום',
+          `${result.error || 'ספק התשלום לא תומך בפתיחת עמוד תשלום באפליקציה.'}\n\nהזמנה #${result.orderNumber} נוצרה בסטטוס "ממתין לתשלום". סיים את התשלום מהאדמין באתר, או סמן "סמן כשולם" אם הלקוח שילם במזומן.`,
+          [{ text: 'הבנתי' }]
+        );
+        // Don't clear cart — let the cashier decide.
+        return;
+      }
+
       hapticSuccess();
       if (result.error) {
         showToast(`הזמנה #${result.orderNumber} נוצרה. ${result.error}`, 'success');
@@ -381,11 +405,11 @@ export default function POSScreen() {
 
   const handleCheckout = useCallback(async () => {
     if (cart.items.length === 0) {
-      Alert.alert('העגלה ריקה', 'הוסף מוצרים לפני יצירת הזמנה');
+      showToast('העגלה ריקה — הוסף מוצרים לפני יצירת הזמנה', 'error');
       return;
     }
     if (!cart.customer.name || !cart.customer.email || !cart.customer.phone) {
-      Alert.alert('פרטי לקוח חסרים', 'יש למלא שם, אימייל וטלפון');
+      showToast('פרטי לקוח חסרים — יש למלא שם, אימייל וטלפון', 'error');
       setCustomerModalOpen(true);
       return;
     }
@@ -393,11 +417,11 @@ export default function POSScreen() {
     if (isPartialPayment) {
       const partial = parseFloat(partialPaymentAmount);
       if (!partial || partial <= 0) {
-        Alert.alert('שגיאה', 'הזן סכום תשלום חלקי');
+        showToast('הזן סכום תשלום חלקי', 'error');
         return;
       }
       if (partial >= cart.total) {
-        Alert.alert('שגיאה', 'לסכום מלא השתמש ב"סמן כשולם"');
+        showToast('לסכום מלא השתמש ב"סמן כשולם"', 'error');
         return;
       }
       doCheckout({ partialPaymentAmount: partial });

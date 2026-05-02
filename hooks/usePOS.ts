@@ -23,14 +23,14 @@ export function usePOSProducts(search?: string, categoryId?: string) {
   return useQuery({
     queryKey: posKeys.products(search, categoryId),
     queryFn: async () => {
-      console.log('[POS] Fetching products...');
+      if (__DEV__) console.log('[POS] Fetching products...');
       try {
         const result = await posApi.getPOSProducts({ search, categoryId });
-        console.log('[POS] Products fetched OK, count:', result?.products?.length);
+        if (__DEV__) console.log('[POS] Products fetched OK, count:', result?.products?.length);
         return result;
       } catch (err: unknown) {
         const error = err as Error & { status?: number };
-        console.log('[POS] Products fetch ERROR:', error.message, 'status:', error.status);
+        if (__DEV__) console.log('[POS] Products fetch ERROR:', error.message, 'status:', error.status);
         throw err;
       }
     },
@@ -197,7 +197,7 @@ export function usePOSCart() {
     setShippingAmount(0);
     setAppliedCoupons([]);
     setNotes('');
-    setMarkAsPaid(true);
+    setMarkAsPaid(false);
     setMode('sale');
   }, []);
 
