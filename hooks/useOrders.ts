@@ -1,7 +1,14 @@
-import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
+import {
+  useQuery,
+  useMutation,
+  useQueryClient,
+  useInfiniteQuery,
+  type InfiniteData,
+  type DefaultError,
+} from '@tanstack/react-query';
 import { useAppStore } from '@/stores';
 import * as ordersApi from '@/lib/api/orders';
-import type { OrdersListParams, Order } from '@/types';
+import type { OrdersListParams, Order, OrdersListResponse } from '@/types';
 
 // ============ Query Keys ============
 export const ordersKeys = {
@@ -27,7 +34,13 @@ export function useOrders(params: OrdersListParams = {}) {
 export function useInfiniteOrders(params: Omit<OrdersListParams, 'page'> = {}) {
   const refreshKey = useAppStore((s) => s.ordersRefreshKey);
   
-  return useInfiniteQuery({
+  return useInfiniteQuery<
+    OrdersListResponse,
+    DefaultError,
+    InfiniteData<OrdersListResponse, number>,
+    readonly unknown[],
+    number
+  >({
     queryKey: [...ordersKeys.lists(), params, refreshKey],
     queryFn: ({ pageParam = 1 }) => ordersApi.getOrders({ ...params, page: pageParam }),
     getNextPageParam: (lastPage) => {
@@ -37,7 +50,10 @@ export function useInfiniteOrders(params: Omit<OrdersListParams, 'page'> = {}) {
       return undefined;
     },
     initialPageParam: 1,
-    staleTime: 1000 * 60 * 2,
+    staleTime: 1000 * 30, // 30 seconds - תיקון בעיית refresh
+    refetchOnMount: true,
+    // בזמן שינוי חיפוש/סינון — מציגים את העמוד הקודם עד שהתשובה מגיעה (בלי מסך טעינה מלא)
+    placeholderData: (previousData) => previousData,
   });
 }
 
@@ -137,9 +153,54 @@ export function useRefundOrder() {
   return useMutation({
     mutationFn: ({ orderId, data }: {
       orderId: string;
-      data: Parameters<typeof ordersApi.refundOrder>[1];
+      data?: Parameters<typeof ordersApi.refundOrder>[1];
     }) => ordersApi.refundOrder(orderId, data),
     
+    onSuccess: (_, { orderId }) => {
+      queryClient.invalidateQueries({ queryKey: ordersKeys.detail(orderId) });
+      triggerRefresh();
+    },
+  });
+}
+
+export function useCancelOrder() {
+  const queryClient = useQueryClient();
+  const triggerRefresh = useAppStore((s) => s.triggerOrdersRefresh);
+
+  return useMutation({
+    mutationFn: (orderId: string) => ordersApi.cancelOrder(orderId),
+    onSuccess: (_, orderId) => {
+      queryClient.invalidateQueries({ queryKey: ordersKeys.detail(orderId) });
+      triggerRefresh();
+    },
+  });
+}
+
+export function useFulfillOrder() {
+  const queryClient = useQueryClient();
+  const triggerRefresh = useAppStore((s) => s.triggerOrdersRefresh);
+
+  return useMutation({
+    mutationFn: ({ orderId, data }: {
+      orderId: string;
+      data?: Parameters<typeof ordersApi.fulfillOrder>[1];
+    }) => ordersApi.fulfillOrder(orderId, data),
+    onSuccess: (_, { orderId }) => {
+      queryClient.invalidateQueries({ queryKey: ordersKeys.detail(orderId) });
+      triggerRefresh();
+    },
+  });
+}
+
+export function useEditOrder() {
+  const queryClient = useQueryClient();
+  const triggerRefresh = useAppStore((s) => s.triggerOrdersRefresh);
+
+  return useMutation({
+    mutationFn: ({ orderId, data }: {
+      orderId: string;
+      data: Parameters<typeof ordersApi.editOrder>[1];
+    }) => ordersApi.editOrder(orderId, data),
     onSuccess: (_, { orderId }) => {
       queryClient.invalidateQueries({ queryKey: ordersKeys.detail(orderId) });
       triggerRefresh();
@@ -151,8 +212,8 @@ export function useAddOrderNote() {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: ({ orderId, note }: { orderId: string; note: string }) => 
-      ordersApi.addOrderNote(orderId, note),
+    mutationFn: ({ orderId, data }: { orderId: string; data: { note?: string; internalNote?: string } }) => 
+      ordersApi.addOrderNote(orderId, data),
     
     onSuccess: (_, { orderId }) => {
       queryClient.invalidateQueries({ queryKey: ordersKeys.detail(orderId) });
