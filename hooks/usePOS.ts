@@ -98,6 +98,8 @@ export function usePOSCart() {
   const [appliedCoupons, setAppliedCoupons] = useState<AppliedCoupon[]>([]);
   const [notes, setNotes] = useState('');
   const [markAsPaid, setMarkAsPaid] = useState(false);
+  const [partialPaymentEnabled, setPartialPaymentEnabled] = useState(false);
+  const [partialPaymentAmount, setPartialPaymentAmount] = useState('');
 
   const addProduct = useCallback(
     (product: POSProduct, variant?: POSVariant) => {
@@ -198,6 +200,8 @@ export function usePOSCart() {
     setAppliedCoupons([]);
     setNotes('');
     setMarkAsPaid(false);
+    setPartialPaymentEnabled(false);
+    setPartialPaymentAmount('');
     setMode('sale');
   }, []);
 
@@ -247,6 +251,8 @@ export function usePOSCart() {
     discountAmount,
     notes,
     markAsPaid,
+    partialPaymentEnabled,
+    partialPaymentAmount,
     subtotal,
     total,
     returnTotal,
@@ -265,5 +271,7 @@ export function usePOSCart() {
     setShippingAmount,
     setNotes,
     setMarkAsPaid,
+    setPartialPaymentEnabled,
+    setPartialPaymentAmount,
   };
 }

@@ -34,6 +34,7 @@ import { formatCurrency } from '@/lib/utils/format';
 import { hapticLight, hapticSuccess, hapticWarning } from '@/lib/utils/haptics';
 import { showToast } from '@/lib/utils/toast';
 import type { POSProduct, POSVariant, POSSearchCustomer } from '@/lib/api/pos';
+import { validateCouponCode } from '@/lib/api/pos';
 
 const SCREEN_HEIGHT = Dimensions.get('window').height;
 const GRID_PADDING = designTokens.spacing[4];
@@ -158,10 +159,6 @@ export default function POSScreen() {
   const [scannerOpen, setScannerOpen] = useState(false);
   const scanCooldown = useRef(false);
 
-  // Partial payment state
-  const [isPartialPayment, setIsPartialPayment] = useState(false);
-  const [partialPaymentAmount, setPartialPaymentAmount] = useState('');
-
   // Coupon state
   const [couponInput, setCouponInput] = useState('');
   const validateCoupon = useValidateCoupon();
@@ -207,6 +204,46 @@ export default function POSScreen() {
   const createOrder = useCreatePOSOrder();
 
   const cart = usePOSCart();
+
+  // Partial payment state — backed by the cart hook so clearCart wipes it
+  const isPartialPayment = cart.partialPaymentEnabled;
+  const partialPaymentAmount = cart.partialPaymentAmount;
+  const setIsPartialPayment = cart.setPartialPaymentEnabled;
+  const setPartialPaymentAmount = cart.setPartialPaymentAmount;
+
+  // Re-validate applied coupons when cart subtotal or customer email
+  // changes — drops coupons that no longer satisfy min-cart-total or
+  // customer-email restrictions.
+  const couponCodes = cart.appliedCoupons.map((c) => c.code).join(',');
+  useEffect(() => {
+    if (!couponCodes) return;
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      for (const coupon of cart.appliedCoupons) {
+        try {
+          const r = await validateCouponCode(
+            coupon.code,
+            cart.subtotal,
+            cart.customer.email || undefined,
+          );
+          if (!cancelled && !r.success) {
+            cart.removeCoupon(coupon.code);
+            showToast(`קופון ${coupon.code} הוסר: ${r.error || 'כבר לא חל'}`, 'info');
+          }
+        } catch {
+          if (!cancelled) {
+            cart.removeCoupon(coupon.code);
+            showToast(`קופון ${coupon.code} הוסר`, 'info');
+          }
+        }
+      }
+    }, 800);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cart.subtotal, cart.customer.email, couponCodes]);
 
   const isProductOutOfStock = useCallback((product: POSProduct) => {
     const tracks = product.trackInventory !== false;
@@ -361,8 +398,6 @@ export default function POSScreen() {
         hapticSuccess();
         showToast(`הזמנה #${result.orderNumber} נוצרה - מעבר לתשלום`, 'success');
         cart.clearCart();
-        setIsPartialPayment(false);
-        setPartialPaymentAmount('');
         Linking.openURL(result.paymentUrl);
         return;
       }
@@ -395,8 +430,6 @@ export default function POSScreen() {
         showToast(`הזמנה #${result.orderNumber} נוצרה בהצלחה`, 'success');
       }
       cart.clearCart();
-      setIsPartialPayment(false);
-      setPartialPaymentAmount('');
     } catch (error: any) {
       hapticWarning();
       showToast(error?.message || 'שגיאה ביצירת ההזמנה', 'error');
@@ -692,8 +725,6 @@ export default function POSScreen() {
                 <TouchableOpacity
                   onPress={() => {
                     cart.clearCart();
-                    setIsPartialPayment(false);
-                    setPartialPaymentAmount('');
                     hapticWarning();
                   }}
                   style={styles.cartClearBtn}
