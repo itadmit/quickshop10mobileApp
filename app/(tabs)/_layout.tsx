@@ -54,9 +54,8 @@ export default function TabsLayout() {
         headerStyle: {
           backgroundColor: dt.colors.surface.card,
           shadowColor: 'transparent',
-          borderBottomWidth: 1,
-          borderBottomColor: dt.colors.ink[100],
           elevation: 0,
+          borderBottomWidth: 0,
         },
         tabBarStyle: {
           backgroundColor: dt.colors.surface.card,

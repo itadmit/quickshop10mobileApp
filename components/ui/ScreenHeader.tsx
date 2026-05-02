@@ -50,8 +50,6 @@ const styles = StyleSheet.create({
     paddingTop: dt.spacing[3],
     paddingBottom: dt.spacing[3],
     backgroundColor: dt.colors.surface.card,
-    borderBottomWidth: 1,
-    borderBottomColor: dt.colors.ink[100],
   },
   side: {
     minWidth: 40,
