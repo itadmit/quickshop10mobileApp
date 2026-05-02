@@ -254,7 +254,7 @@ function ProductCard({ product, onPress }: { product: Product; onPress: () => vo
             return priceText ? (
               <Text style={styles.productPrice}>{priceText}</Text>
             ) : product.hasVariants ? (
-              <Text style={styles.productVariantHint}>מחיר לפי וריאנט</Text>
+              <Text style={styles.productVariantHint}>מחיר לפי וריאציה</Text>
             ) : null;
           })()}
           {stockInfo && (

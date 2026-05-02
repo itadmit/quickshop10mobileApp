@@ -717,7 +717,7 @@ export default function ProductDetailScreen() {
             {/* Variants */}
             {variantsFormData.length > 0 && (
               <View style={styles.editSection}>
-                <Text style={styles.editSectionTitle}>וריאנטים ({variantsFormData.length})</Text>
+                <Text style={styles.editSectionTitle}>וריאציות ({variantsFormData.length})</Text>
                 {variantsFormData.map((variant, index) => (
                   <View
                     key={variant.id}
@@ -1000,7 +1000,7 @@ export default function ProductDetailScreen() {
         {/* Variants (read-only) */}
         {product.hasVariants && variants && variants.length > 0 && (
           <View style={styles.section}>
-            <SectionHeader title={`וריאנטים (${variants.length})`} />
+            <SectionHeader title={`וריאציות (${variants.length})`} />
             <View style={styles.variantsList}>
               {variants.map((variant, index) => (
                 <View
