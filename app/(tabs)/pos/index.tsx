@@ -1755,7 +1755,7 @@ const styles = StyleSheet.create({
   variantBadge: {
     position: 'absolute',
     top: 6,
-    right: 6,
+    end: 6,
     backgroundColor: dt.colors.semantic.info.light,
     paddingHorizontal: 6,
     paddingVertical: 2,
@@ -1769,7 +1769,7 @@ const styles = StyleSheet.create({
   returnBadge: {
     position: 'absolute',
     top: 6,
-    left: 6,
+    start: 6,
     width: 18,
     height: 18,
     borderRadius: 9,

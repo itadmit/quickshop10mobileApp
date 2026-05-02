@@ -885,7 +885,7 @@ const styles = StyleSheet.create({
   removeImageBtn: {
     position: 'absolute',
     top: 4,
-    right: 4,
+    end: 4,
     width: 22,
     height: 22,
     borderRadius: 11,
@@ -896,7 +896,7 @@ const styles = StyleSheet.create({
   primaryBadge: {
     position: 'absolute',
     bottom: 4,
-    left: 4,
+    start: 4,
     backgroundColor: designTokens.colors.brand[500],
     paddingHorizontal: 6,
     paddingVertical: 2,

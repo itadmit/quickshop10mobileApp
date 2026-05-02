@@ -356,12 +356,12 @@ const styles = StyleSheet.create({
   draftBadge: {
     position: 'absolute',
     top: 0,
-    right: 0,
+    end: 0,
     backgroundColor: colors.ink[700],
     paddingHorizontal: spacing[2],
     paddingVertical: 3,
-    borderBottomLeftRadius: radii.sm,
-    borderTopRightRadius: radii.lg,
+    borderBottomStartRadius: radii.sm,
+    borderTopEndRadius: radii.lg,
     zIndex: 1,
   },
   draftText: {

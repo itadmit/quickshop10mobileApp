@@ -7,7 +7,9 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { Text, Label } from './Text';
-import { colors, spacing, borderRadius, fonts, fontSizes } from './theme';
+import { spacing, fonts, fontSizes, designTokens } from './theme';
+
+const dt = designTokens;
 
 interface InputProps extends Omit<TextInputProps, 'style'> {
   label?: string;
@@ -20,6 +22,7 @@ interface InputProps extends Omit<TextInputProps, 'style'> {
   inputStyle?: object;
 }
 
+// מינימליסטי - שדות קלט נקיים
 export const Input = forwardRef<TextInput, InputProps>(
   (
     {
@@ -58,7 +61,7 @@ export const Input = forwardRef<TextInput, InputProps>(
               rightIcon ? styles.inputWithRightIcon : undefined,
               inputStyle,
             ]}
-            placeholderTextColor={colors.textMuted}
+            placeholderTextColor={dt.colors.ink[400]}
             textAlign="right"
             {...props}
           />
@@ -94,54 +97,53 @@ const styles = StyleSheet.create({
     marginBottom: spacing[4],
   },
   label: {
-    marginBottom: spacing[2],
+    marginBottom: spacing[1.5],
     textAlign: 'right',
-    alignSelf: 'flex-end',
+    alignSelf: 'flex-start',
   },
   inputWrapper: {
-    flexDirection: 'row-reverse', // RTL
+    flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: borderRadius.md,
+    backgroundColor: dt.colors.surface.card,
+    borderWidth: 1.5,
+    borderColor: dt.colors.ink[200],
+    borderRadius: dt.radii.md,
     minHeight: 48,
   },
   inputError: {
-    borderColor: colors.error,
-    borderWidth: 2,
+    borderColor: dt.colors.semantic.danger.DEFAULT,
   },
   inputDisabled: {
-    backgroundColor: colors.gray100,
-    opacity: 0.7,
+    backgroundColor: dt.colors.ink[100],
+    opacity: 0.6,
   },
   input: {
     flex: 1,
     paddingVertical: spacing[3],
-    paddingHorizontal: spacing[4],
+    paddingHorizontal: spacing[3],
     fontFamily: fonts.regular,
     fontSize: fontSizes.base,
-    color: colors.textPrimary,
+    color: dt.colors.ink[950],
     textAlign: 'right',
-    writingDirection: 'rtl',
   },
   inputWithLeftIcon: {
-    paddingLeft: spacing[2],
+    paddingStart: spacing[2],
   },
   inputWithRightIcon: {
-    paddingRight: spacing[2],
+    paddingEnd: spacing[2],
   },
   iconLeft: {
-    paddingLeft: spacing[3],
+    paddingStart: spacing[3],
   },
   iconRight: {
-    paddingRight: spacing[3],
+    paddingEnd: spacing[3],
   },
   errorText: {
     marginTop: spacing[1],
+    textAlign: 'right',
   },
   hintText: {
     marginTop: spacing[1],
+    textAlign: 'right',
   },
 });
-

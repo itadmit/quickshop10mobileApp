@@ -165,7 +165,7 @@ const styles = StyleSheet.create({
   badge: {
     position: 'absolute',
     top: -4,
-    right: -10,
+    end: -10,
     backgroundColor: dt.colors.semantic.danger.DEFAULT,
     borderRadius: 10,
     minWidth: 16,
