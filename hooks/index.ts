@@ -58,3 +58,13 @@ export {
   notificationSettingsKeys,
 } from './useNotificationSettings';
 
+// Returns / Exchanges
+export {
+  useReturnRequests,
+  useReturnRequest,
+  useProcessReturn,
+  usePendingInventory,
+  useActOnPendingItem,
+  returnsKeys,
+} from './useReturns';
+

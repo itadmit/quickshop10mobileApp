@@ -218,8 +218,8 @@ export default function MoreScreen() {
           <MenuItem
             icon="refresh-outline"
             title="החזרות והחלפות"
-            subtitle="ניהול מתקדם דרך האתר"
-            onPress={() => Linking.openURL(`https://${QUICKSHOP_DOMAIN}/shops/${currentStore?.slug}/admin/returns`)}
+            subtitle="בקשות החזרה, החלפה ומלאי ממתין"
+            onPress={() => router.push('/(tabs)/returns')}
           />
         </MenuSection>
 
