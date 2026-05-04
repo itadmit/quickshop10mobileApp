@@ -16,6 +16,7 @@ export function useDashboardSummary(period: 'today' | 'week' | 'month' | 'year' 
     queryFn: () => analyticsApi.getDashboardSummary({ period }),
     staleTime: 1000 * 60 * 2, // 2 minutes
     refetchInterval: 1000 * 60 * 5, // Refetch every 5 minutes
+    placeholderData: (previousData) => previousData,
   });
 }
 
@@ -33,6 +34,7 @@ export function useTopProducts(period: 'week' | 'month' | 'year' = 'month') {
     queryKey: dashboardKeys.topProducts(period),
     queryFn: () => analyticsApi.getTopProducts({ period, limit: 5 }),
     staleTime: 1000 * 60 * 10, // 10 minutes
+    placeholderData: (previousData) => previousData,
   });
 }
 

@@ -16,7 +16,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
 import { Image } from 'expo-image';
-import { useDashboardSummary, useFullAnalytics, useOrdersStats, useProducts, useCustomers } from '@/hooks';
+import { useDashboardSummary, useFullAnalytics, useOrdersStats, useProducts, useCustomers, dashboardKeys, analyticsKeys } from '@/hooks';
+import { useQueryClient } from '@tanstack/react-query';
+import * as analyticsApi from '@/lib/api/analytics';
 import { useAuthStore, useAppStore } from '@/stores';
 import {
   Text,
@@ -60,6 +62,24 @@ export default function DashboardScreen() {
   }, [refreshCurrentStore]);
 
   const [selectedPeriod, setSelectedPeriod] = useState<PeriodKey>('today');
+  const queryClient = useQueryClient();
+
+  // Prefetch all four ranges in parallel on mount, so tab switching is instant.
+  useEffect(() => {
+    const periods: PeriodKey[] = ['today', 'week', 'month', 'year'];
+    periods.forEach((p) => {
+      queryClient.prefetchQuery({
+        queryKey: dashboardKeys.summary(p),
+        queryFn: () => analyticsApi.getDashboardSummary({ period: p }),
+        staleTime: 1000 * 60 * 2,
+      });
+      queryClient.prefetchQuery({
+        queryKey: analyticsKeys.full({ period: p }),
+        queryFn: () => analyticsApi.getAnalytics({ period: p }),
+        staleTime: 1000 * 60 * 5,
+      });
+    });
+  }, [queryClient]);
 
   const {
     data: summary,

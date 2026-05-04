@@ -18,6 +18,7 @@ export function useFullAnalytics(params: Parameters<typeof analyticsApi.getAnaly
     queryFn: () => analyticsApi.getAnalytics(params),
     staleTime: 1000 * 60 * 5, // 5 minutes
     refetchInterval: 1000 * 60 * 5, // Auto-refresh every 5 minutes
+    placeholderData: (previousData) => previousData,
   });
 }
 
@@ -35,6 +36,7 @@ export function useTopProducts(params: Parameters<typeof analyticsApi.getTopProd
     queryKey: analyticsKeys.topProducts(params),
     queryFn: () => analyticsApi.getTopProducts(params),
     staleTime: 1000 * 60 * 10, // 10 minutes
+    placeholderData: (previousData) => previousData,
   });
 }
 
